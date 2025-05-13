@@ -34,10 +34,11 @@ class Workday(BaseModel):
     )
 
 
-
-class WorkdayStat:
-    pass
-
+class WorkdayApplication(BaseModel):
+    id: Optional[int] = None
+    workday_id: int
+    application_id: int
+    time_seconds: int
 
 
 class Session(BaseModel):

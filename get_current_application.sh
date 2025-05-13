@@ -16,8 +16,6 @@ if [[ "$active_app" == "Google Chrome" ]]; then
         clean_domain=${full_domain#www.}
         # Extract base domain without TLD
         base_domain=$(echo "$clean_domain" | sed -E 's/\.[^.]+$//')
-        # Capitalize first letter of each word in the domain
-        formatted_domain=$(echo "$base_domain" | awk '{for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))substr($i,2)}}1' OFS=" ")
 
         # Special handling for YouTube watch pages
         if [[ $clean_domain == *"youtube.com"* && $chrome_url == *"/watch"* ]]; then
@@ -29,17 +27,17 @@ if [[ "$active_app" == "Google Chrome" ]]; then
             ')
             # Clean up the title (remove " - YouTube" suffix if present)
             video_title=${video_title% - YouTube}
-            echo "WEBAPP:$formatted_domain:$video_title"
+            echo "WEBAPP:$base_domain:$video_title"
 
         # Special handling for Reddit subreddit pages
         elif [[ $clean_domain == *"reddit.com"* && $chrome_url =~ /r/([^/]+) ]]; then
             # Extract the subreddit name from the regex match
             subreddit_name="${BASH_REMATCH[1]}"
-            echo "WEBAPP:$formatted_domain:$subreddit_name"
+            echo "WEBAPP:$base_domain:$subreddit_name"
 
         # Default handling for all other websites
         else
-            echo "WEBAPP:$formatted_domain"
+            echo "WEBAPP:$base_domain"
         fi
     else
         # Fallback if URL parsing fails

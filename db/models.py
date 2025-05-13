@@ -14,7 +14,7 @@ class ApplicationModel(Base):
     name = Column(String(255), nullable=False)
     is_productive = Column(Boolean, nullable=True)
 
-    workday_stats = relationship("WorkdayStatModel", back_populates="application")
+    workday_applications = relationship("WorkdayApplicationModel", back_populates="application")
 
     __table_args__ = (
         UniqueConstraint('name', 'is_productive', name='uix_name_is_productive'),
@@ -33,26 +33,30 @@ class WorkdayModel(Base):
     productive_time_seconds = Column(Integer, default=0)
     non_productive_time_seconds = Column(Integer, default=0)
 
-    workday_stats = relationship("WorkdayStatModel", back_populates="workday")
+    workday_applications = relationship("WorkdayApplicationModel", back_populates="workday")
     sessions = relationship("SessionModel", back_populates="workday")
 
     def __repr__(self):
         return f"<WorkdayModel(id={self.id}, date='{self.date}', productive={self.productive_time_seconds}s)>"
 
 
-class WorkdayStatModel(Base):
-    __tablename__ = 'workday_stat'
+class WorkdayApplicationModel(Base):
+    __tablename__ = 'workday_application'
 
     id = Column(Integer, primary_key=True)
     workday_id = Column(Integer, ForeignKey('workday.id'), nullable=False)
     application_id = Column(Integer, ForeignKey('application.id'), nullable=False)
     time_seconds = Column(Integer, default=0)
 
-    workday = relationship("WorkdayModel", back_populates="workday_stats")
-    application = relationship("ApplicationModel", back_populates="workday_stats")
+    workday = relationship("WorkdayModel", back_populates="workday_applications")
+    application = relationship("ApplicationModel", back_populates="workday_applications")
+
+    __table_args__ = (
+        UniqueConstraint('workday_id', 'application_id', name='uq_workday_application_fks'),
+    )
 
     def __repr__(self):
-        return f"<WorkdayStatModel(id={self.id}, app_id={self.application_id}, time={self.time_seconds}s)>"
+        return f"<WorkdayApplicationModel(id={self.id}, app_id={self.application_id}, time={self.time_seconds}s)>"
 
 
 class SessionModel(Base):

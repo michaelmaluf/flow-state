@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 from typing import Optional
@@ -25,16 +26,17 @@ class ApplicationTrackingService:
             return True
         return False
 
-    def set_current_application(self, application: Application, **kwargs):
+    def set_current_application(self, application: Application, **kwargs) -> Application:
         # save stats before setting new current application
         # TODO: save stats, maybe batch stats, record current workday stats, think about how to manage workday
         # entity so it can be used and referenced here
-        if self.current_application:
-            self.save_
+        old_application = self.current_application
 
         for key, value in kwargs.items():
             setattr(application, key, value)
         self.current_application = application
+
+        return old_application
 
     def get_application(self, app_name: str) -> Application:
         return self.db.get_application(app_name)
@@ -69,6 +71,7 @@ class ApplicationTrackingService:
 
         is_productive = self.ai_client.send_message(formatted_msg).lower() == 'true'
         return self.get_or_create_application(app_name, is_productive)
+
 
     def format_web_app_inquiry(self, app_name: str):
         return (
