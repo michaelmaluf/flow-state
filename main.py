@@ -1,4 +1,4 @@
-from database import Database
+from db.database import Database
 
 DB_URL = "postgresql://percules:***REMOVED***@localhost:5432/flow_state"
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     # Initialize DB
     db.create_tables()
 
-    handle_app_change("VSCode", True)
-    handle_app_change("YouTube", False)
-
-    print(db.get_today_stats())
+    # handle_app_change("VSCode", True)
+    # handle_app_change("YouTube", False)
+    #
+    # print(db.get_today_stats())
