@@ -112,28 +112,32 @@ class Database:
 
             return Workday.from_orm(workday)
 
-    def update_workday(self, workday: Workday):
+    def update_workday(self, workday: Workday) -> None:
         with self.session_scope() as session:
             workday_model = session.get(WorkdayModel, workday.id)
             workday_model.productive_time_seconds = workday.productive_time_seconds
             workday_model.non_productive_time_seconds = workday.non_productive_time_seconds
             workday_model.pomodoros_left = workday.pomodoros_left
 
+    def activate_pomodoro(self, workday: Workday) -> bool:
+        pass
 
-    def get_today_stats(self):
-        session = self.get_session()
-        workday = self.get_or_create_workday()
 
-        result = {
-            'productive_time': workday.productive_time_seconds,
-            'non_productive_time': workday.non_productive_time_seconds,
-            'pomodoros_left': workday.pomodoros_left,
-            'total_time': workday.productive_time_seconds + workday.non_productive_time_seconds,
-            'productivity_ratio': 0
-        }
 
-        if result['total_time'] > 0:
-            result['productivity_ratio'] = workday.productive_time_seconds / result['total_time']
-
-        session.close()
-        return result
+    # def get_today_stats(self):
+    #     session = self.get_session()
+    #     workday = self.get_or_create_workday()
+    #
+    #     result = {
+    #         'productive_time': workday.productive_time_seconds,
+    #         'non_productive_time': workday.non_productive_time_seconds,
+    #         'pomodoros_left': workday.pomodoros_left,
+    #         'total_time': workday.productive_time_seconds + workday.non_productive_time_seconds,
+    #         'productivity_ratio': 0
+    #     }
+    #
+    #     if result['total_time'] > 0:
+    #         result['productivity_ratio'] = workday.productive_time_seconds / result['total_time']
+    #
+    #     session.close()
+    #     return result

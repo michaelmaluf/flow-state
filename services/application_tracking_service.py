@@ -1,9 +1,8 @@
-import datetime
 import os
 import sys
 from typing import Optional
 
-from claude_client import AIClient
+from client.claude_client import AIClient
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
