@@ -1,20 +1,50 @@
-# log.py
 import logging
 import logging.config
 import logging.handlers
 import os
+import sys
 
 import yaml
 
 
-class DebugFilter(logging.Filter):
-    def filter(self, record):
-        return record.levelno == logging.DEBUG
+class LevelOnlyFilter(logging.Filter):
+    def __init__(self, level):
+        super().__init__()
+        self.level = getattr(logging, level) if isinstance(level, str) else level
 
+    def filter(self, record):
+        return record.levelno == self.level
+
+
+class LevelEqualOrAboveFilter(logging.Filter):
+    def __init__(self, level):
+        super().__init__()
+        self.level = getattr(logging, level) if isinstance(level, str) else level
+
+    def filter(self, record):
+        return record.levelno >= self.level
+
+
+class LevelInRangeFilter(logging.Filter):
+    def __init__(self, min_level, max_level):
+        super().__init__()
+        self.min_level = getattr(logging, min_level) if isinstance(min_level, str) else min_level
+        self.max_level = getattr(logging, max_level) if isinstance(max_level, str) else max_level
+
+    def filter(self, record):
+        return self.min_level <= record.levelno <= self.max_level
+
+def register_logging_filters():
+    module = sys.modules['__main__']
+    module.LevelOnlyFilter = LevelOnlyFilter
+    module.LevelEqualOrAboveFilter = LevelEqualOrAboveFilter
+    module.LevelInRangeFilter = LevelInRangeFilter
 
 def setup_logging(default_path='log.yaml', default_level=logging.INFO):
     """Setup logging configuration"""
     try:
+        register_logging_filters()
+
         root_dir = os.path.dirname(os.path.abspath(__file__))
         logs_dir = os.path.join(root_dir, "logs")
         config_path = os.path.join(root_dir, default_path)
@@ -36,13 +66,7 @@ def setup_logging(default_path='log.yaml', default_level=logging.INFO):
                     elif not os.path.isabs(filename):
                         handler['filename'] = os.path.join(logs_dir, filename)
 
-            # Register the DebugFilter directly in code
             logging.config.dictConfig(config)
-
-            # Add the filter manually after config is loaded
-            debug_handler = logging.getLogger('main_app').handlers[2]  # Assuming debug_file is the third handler
-            debug_handler.addFilter(DebugFilter())
-
             print(f"Logging configured from {config_path}")
         else:
             # Default config
