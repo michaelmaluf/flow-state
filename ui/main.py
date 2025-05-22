@@ -7,12 +7,14 @@ from client.claude_client import ClaudeClient
 from client.pi_client import PiClient
 from controller.flow_state_controller import FlowStateController
 from db.database import Database
-from log import setup_logging
+from log import setup_logging, get_main_app_logger
 from services.flow_state_service import FlowStateService
 from ui.views.analytics_view import AnalyticsView
 from ui.views.home_view import HomeView
 
 matplotlib.use('Qt5Agg')
+
+logger = get_main_app_logger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -84,8 +86,16 @@ class MainWindow(QMainWindow):
         # Set the central widget
         self.setCentralWidget(self.tabs)
 
+    def closeEvent(self, event):
+        '''
+        method will be overridden when application is transformed into a full-fledged desktop app, most likely will call window.hide() here
+        self.hide()
+        event.ignore()
+        '''
+
     def handle_graceful_exit(self):
         self.home_tab.stop_app_clicked.emit()
+        QApplication.instance().quit()
 
 
 
