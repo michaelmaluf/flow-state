@@ -1,6 +1,8 @@
 import os
 import sys
-from typing import Optional
+
+from PyQt6.QtCore import pyqtSlot, QRunnable, QObject, pyqtSignal
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from client.claude_client import AIClient
@@ -10,30 +12,42 @@ from log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 
+class WorkerSignals(QObject):
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(float)
 
-class AppTrackingService:
-    def __init__(self, db: Database, ai_client: AIClient):
+
+class AppProcessingService(QRunnable):
+
+    class Signals(QObject):
+        finished = pyqtSignal()
+        error = pyqtSignal(tuple)
+        result = pyqtSignal(object)
+        progress = pyqtSignal(float)
+
+    def __init__(self, db: Database, ai_client: AIClient, script_response: ScriptResponse):
+        super().__init__()
         self.db = db
         self.ai_client = ai_client
-        self.current_application: Optional[Application] = None
+        self.script_response = script_response
+        self.signals = self.Signals()
 
-    def is_current_application(self, script_response: ScriptResponse) -> bool:
-        if self.current_application and self.current_application.is_match(script_response.app_name, script_response.tag):
-            logger.debug(f"Running application matches current application: {self.current_application}")
-            return True
-        return False
+    @pyqtSlot()
+    def run(self):
+        """
+        1. CASE 1: tag workflow, needs ai intervention
+        2. CASE 2: desktop app or web app in database, return
+        3. CASE 3: new desktop app or web app, add to db workflow
+        """
+        app = self.get_application(self.script_response.app_name)
+        if self.script_response.tag:
+            app = self.process_tag_workflow(self.script_response.app_name, self.script_response.tag)
+        elif not app:
+            app = self.process_new_application(self.script_response.app_type, self.script_response.app_name)
 
-    def set_current_application(self, application: Application, **kwargs) -> Application:
-        # save stats before setting new current application
-        # TODO: save stats, maybe batch stats, record current workday stats, think about how to manage workday
-        # entity so it can be used and referenced here
-        old_application = self.current_application
-
-        for key, value in kwargs.items():
-            setattr(application, key, value)
-        self.current_application = application
-
-        return old_application
+        self.signals.result.emit(app)
 
     def get_application(self, app_name: str) -> Application:
         return self.db.get_application(app_name)
@@ -62,7 +76,7 @@ class AppTrackingService:
         if app_name == 'youtube':
             formatted_msg = self.format_yt_video_inquiry(msg)
         elif app_name == 'reddit':
-            formatted_msg = self.format_subreddit_inquiry(msg)
+            formatted_msg = format_subreddit_inquiry(msg)
         else:
             logger.error(f"App name not valid for tag workflow: {app_name}")
 
