@@ -1,40 +1,42 @@
 import os
 import sys
-import requests as requests
-from requests.exceptions import RequestException, Timeout, HTTPError
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from client.base_network_client import BaseNetworkClient
 from log import get_main_app_logger
-
 
 logger = get_main_app_logger(__name__)
 
-class PiClient:
-    def __init__(self, url: str, timeout: int = 5):
-        self.base_url = url
-        self.timeout = timeout
 
-    def _post(self, endpoint: str, payload: dict = None):
-        url = f"{self.base_url}/flow-state/{endpoint}"
-        try:
-            response = requests.post(url, json=payload or {}, timeout=self.timeout)
-            response.raise_for_status()
-        except Timeout:
-            logger.error(f"Request to {url} timed out.")
-        except HTTPError as e:
-            logger.error(f"HTTP error {e.response.status_code} for {url}: {e.response.text}")
-        except RequestException as e:
-            logger.error(f"Request failed for {url}: {e}")
-        except ValueError:
-            logger.error(f"Failed to decode JSON from {url}")
-        except Exception:
-            logger.exception(f"Unexpected error while calling {url}")
+class PiClient(BaseNetworkClient):
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.base_url = url
+
+    def _handle_success(self, operation_type, response):
+        logger.info(f"Successful HTTP request to pi client (Operation Type: {operation_type}, Response: {response})")
+        self.response_received.emit(operation_type, response)
+
+    def _handle_error(self, operation_type, error_msg, status_code):
+        error_detail = f"{operation_type} failed: {error_msg}"
+        if status_code:
+            error_detail += f" (HTTP {status_code})"
+
+        logger.error(f"Failed HTTP request to pi client (Operation Type: {operation_type}, Error Details: {error_detail})")
+        self.request_error.emit(operation_type, error_detail)
 
     def start_productive_timer(self, time: int):
-        return self._post("productive", {"time": time})
+        payload = {"time": time}
+        self.post('/flow-state/productive', payload, 'start_productive_timer')
 
     def start_non_productive_timer(self, time: int):
-        return self._post("non-productive", {"time": time})
+        payload = {"time": time}
+        self.post('/flow-state/non-productive', payload, 'start_non_productive_timer')
 
     def start_pomodoro_timer(self, time: int):
-        return self._post("pomodoro", {"time": time})
+        payload = {"time": time}
+        self.post('/flow-state/pomodoro', payload, 'start_pomodoro_timer')
+
+    def pause_all_timers(self):
+        self.post('/flow-state/pause', None, 'pause_all_timers')
