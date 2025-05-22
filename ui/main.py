@@ -84,6 +84,10 @@ class MainWindow(QMainWindow):
         # Set the central widget
         self.setCentralWidget(self.tabs)
 
+    def handle_graceful_exit(self):
+        self.home_tab.stop_app_clicked.emit()
+
+
 
 if __name__ == '__main__':
     setup_logging()

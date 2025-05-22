@@ -1,6 +1,6 @@
 import json
 
-from PyQt6.QtCore import QObject, pyqtSignal, QUrl, QTimer
+from PyQt6.QtCore import QObject, pyqtSignal, QUrl, QTimer, QEventLoop
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 
@@ -16,6 +16,7 @@ class BaseNetworkClient(QObject):
         self.retry_delay = retry_delay
         self.manager = QNetworkAccessManager(self)
         self.manager.setTransferTimeout(timeout)
+        self.pending_replies = []
 
     def get(self, endpoint, operation_type=None):
         return self._make_request('GET', endpoint, operation_type=operation_type)
@@ -28,6 +29,24 @@ class BaseNetworkClient(QObject):
 
     def delete(self, endpoint, operation_type=None):
         return self._make_request('DELETE', endpoint, operation_type=operation_type)
+
+    def wait_for_completion(self, timeout_ms=3000):
+        """Wait for all pending requests to finish, called on application exit to ensure clients are in sync"""
+        if not self.pending_replies:
+            return
+
+        loop = QEventLoop()
+        timer = QTimer()
+        timer.setSingleShot(True)
+        timer.timeout.connect(loop.quit)
+        timer.start(timeout_ms)
+
+        # Check every 100ms if all done
+        check_timer = QTimer()
+        check_timer.timeout.connect(lambda: loop.quit() if not self.pending_replies else None)
+        check_timer.start(100)
+
+        loop.exec()
 
     def _make_request(self, method, endpoint, payload=None, operation_type=None, attempt=1):
         """
@@ -78,7 +97,10 @@ class BaseNetworkClient(QObject):
 
         # Connect response handler
         operation_id = operation_type or endpoint
+        self.pending_replies.append(reply)
+
         reply.finished.connect(lambda: self._handle_response(reply, operation_id, retry_info))
+        reply.finished.connect(lambda: self.pending_replies.remove(reply) if reply in self.pending_replies else None)
 
         return reply
 

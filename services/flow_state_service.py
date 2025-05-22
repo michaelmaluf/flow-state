@@ -68,6 +68,8 @@ class FlowStateService(QObject):
 
             self.current_application = None
             self.pi_client.pause_all_timers()
+            self.pi_client.wait_for_completion()
+
             self.application_state_changed.emit(False)
         else:
             logger.warning("Attempted to stop tracking while not tracking")

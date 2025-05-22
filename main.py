@@ -1,6 +1,9 @@
+import atexit
 import os
 import sys
+import signal
 from PyQt6.QtWidgets import QApplication
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from client.pi_client import PiClient
@@ -18,6 +21,7 @@ app: QApplication | None = None
 window: MainWindow | None = None
 flow_state_controller: FlowStateController | None = None
 
+
 def create_app():
     global app, window, flow_state_controller
 
@@ -31,7 +35,20 @@ def create_app():
     flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
 
 
+def signal_handler(signum, frame):
+    logger.info(f"Signal {signum} detected, initiating graceful exit")
+    window.handle_graceful_exit()
+
+def exit_handler():
+    logger.info("Python exit detected, initiating graceful exit")
+    window.handle_graceful_exit()
+
 if __name__ == '__main__':
     create_app()
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    atexit.register(exit_handler)
+
     window.show()
     sys.exit(app.exec())

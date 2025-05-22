@@ -87,8 +87,12 @@ class FlowStateController:
 
     def stop_tracking(self):
         logger.info("Stopping application tracking")
+        if not self.is_tracking:
+            return
+
         self.is_tracking = False
         self.service.stop_tracking()
+
         if self.local_pomodoro_time:
             self.end_pomodoro()
         self.ui_timer.stop()
