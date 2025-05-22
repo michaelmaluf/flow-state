@@ -90,7 +90,7 @@ if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
 
-    db = Database("postgresql://percules:REDACTED@localhost:5432/flow_state")
+    db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
     pi_client = PiClient("http://192.168.1.28:5050")
     ai_client = ClaudeClient()
     flow_state_service = FlowStateService(db, ai_client, pi_client)

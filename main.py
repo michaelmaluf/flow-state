@@ -1,66 +1,37 @@
+import os
+import sys
+from PyQt6.QtWidgets import QApplication
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from client.pi_client import PiClient
+from controller.flow_state_controller import FlowStateController
+from services.flow_state_service import FlowStateService
+from ui.main import MainWindow
 from db.database import Database
+from log import setup_logging, get_main_app_logger
+from client.claude_client import ClaudeClient
 
-DB_URL = "postgresql://percules:REDACTED@localhost:5432/flow_state"
+setup_logging()
+logger = get_main_app_logger(__name__)
 
-# Initialize the database
-db = Database(DB_URL)
-db.create_tables()
+app: QApplication | None = None
+window: MainWindow | None = None
+flow_state_controller: FlowStateController | None = None
 
+def create_app():
+    global app, window, flow_state_controller
 
-# Track application usage
-def track_app_usage(app_name, seconds, is_productive=None):
-    db.update_application_time(app_name, seconds, is_productive)
+    app = QApplication([])
+    window = MainWindow()
 
-
-# Manage sessions
-active_session_id = None
-interruptions = 0
-
-
-def start_session(app_name=None):
-    global active_session_id
-    # active_session_id = db.start_session(app_name)
-    return active_session_id
-
-
-def end_session():
-    global active_session_id, interruptions
-    if active_session_id:
-        db.end_session(active_session_id, interruptions)
-        active_session_id = None
-        interruptions = 0
+    db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
+    pi_client = PiClient("http://192.168.1.28:5050")
+    ai_client = ClaudeClient()
+    flow_state_service = FlowStateService(db, ai_client, pi_client)
+    flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
 
 
-def handle_app_change(new_app_name, is_productive=None):
-    global active_session_id, interruptions
-
-    # Update time for the app
-    track_app_usage(new_app_name, 10, is_productive)  #
-
-    if is_productive:
-        if not active_session_id:
-            start_session(new_app_name)
-    else:
-        if active_session_id:
-            interruptions += 1
-            # End session if interruption is too long
-            # (In real app, you'd track time in non-productive app)
-            end_session()
-
-
-def get_stats_for_pi():
-    stats = db.get_today_stats()
-    return {
-        'productive_seconds': stats['productive_time'],
-        'non_productive_seconds': stats['non_productive_time']
-    }
-
-
-if __name__ == "__main__":
-    # Initialize DB
-    db.create_tables()
-
-    # handle_app_change("VSCode", True)
-    # handle_app_change("YouTube", False)
-    #
-    # print(db.get_today_stats())
+if __name__ == '__main__':
+    create_app()
+    window.show()
+    sys.exit(app.exec())
