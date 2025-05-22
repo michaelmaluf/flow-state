@@ -76,7 +76,7 @@ class AppProcessingService(QRunnable):
         if app_name == 'youtube':
             formatted_msg = self.format_yt_video_inquiry(msg)
         elif app_name == 'reddit':
-            formatted_msg = format_subreddit_inquiry(msg)
+            formatted_msg = self.format_subreddit_inquiry(msg)
         else:
             logger.error(f"App name not valid for tag workflow: {app_name}")
 

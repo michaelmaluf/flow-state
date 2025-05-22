@@ -4,11 +4,11 @@ import anthropic
 
 
 class AIClient(ABC):
-    def __init__(self):
-        self.client = self.create_client()
+    def __init__(self, api_key):
+        self.client = self.create_client(api_key)
 
     @abstractmethod
-    def create_client(self):
+    def create_client(self, api_key):
         pass
 
     @abstractmethod
@@ -17,12 +17,12 @@ class AIClient(ABC):
 
 
 class ClaudeClient(AIClient):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, api_key):
+        super().__init__(api_key)
 
-    def create_client(self):
+    def create_client(self, api_key):
         return anthropic.Anthropic(
-            api_key="CLAUDE_API_KEY",
+            api_key=api_key,
         )
 
     def send_message(self, message: str):

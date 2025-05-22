@@ -21,6 +21,8 @@ app: QApplication | None = None
 window: MainWindow | None = None
 flow_state_controller: FlowStateController | None = None
 
+# TODO: fix ui somehow lol, look into making this a desktop application AND THEN look into completing analytics tab
+# TODO: test that times and flushes and workflow is working, appears to be running smoothly but test for the day
 
 def create_app():
     global app, window, flow_state_controller
@@ -30,7 +32,7 @@ def create_app():
 
     db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
     pi_client = PiClient("http://192.168.1.28:5050")
-    ai_client = ClaudeClient()
+    ai_client = ClaudeClient(sys.argv[2])
     flow_state_service = FlowStateService(db, ai_client, pi_client)
     flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
 
