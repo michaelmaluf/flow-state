@@ -125,7 +125,7 @@ class FlowStateService(QObject):
         duration = 0
 
         if self.current_application:
-            self._finalize_app_time()
+            duration = self._finalize_app_time()
             logger.debug(f"Application change: {self.current_application.name} -> {new_app.name}")
 
         if self.current_application is None or self.current_application.is_productive != new_app.is_productive:
@@ -146,6 +146,8 @@ class FlowStateService(QObject):
             self.workday.productive_time_seconds += duration
         else:
             self.workday.non_productive_time_seconds += duration
+
+        return duration
 
     def _handle_flush_to_db(self, finalize_current_app=False):
         if finalize_current_app:
