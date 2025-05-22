@@ -2,6 +2,7 @@ import logging
 import logging.config
 import logging.handlers
 import os
+import shutil
 import sys
 
 import yaml
@@ -50,7 +51,13 @@ def setup_logging(default_path='log.yaml', default_level=logging.INFO):
         config_path = os.path.join(root_dir, default_path)
 
         # Create logs directory
-        os.makedirs(logs_dir, exist_ok=True)
+        # os.makedirs(logs_dir, exist_ok=True)
+
+        if os.path.exists(logs_dir):
+            shutil.rmtree(logs_dir)
+
+        # Create fresh empty directory
+        os.makedirs(logs_dir)
 
         if os.path.exists(config_path):
             # Load config

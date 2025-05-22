@@ -1,6 +1,6 @@
 from db.database import Database
 
-DB_URL = "postgresql://percules:***REMOVED***@localhost:5432/flow_state"
+DB_URL = "postgresql://percules:REDACTED@localhost:5432/flow_state"
 
 # Initialize the database
 db = Database(DB_URL)

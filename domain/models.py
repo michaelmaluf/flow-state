@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Application(BaseModel):
@@ -9,17 +9,25 @@ class Application(BaseModel):
     name: str
     is_productive: bool
     tag: str = ''
-    start_time: Optional[datetime] = None
+    start_time: Optional[datetime] = Field(default_factory=datetime.now)
 
     model_config = ConfigDict(
-        from_attributes=True
+        from_attributes=True,
     )
 
     def is_match(self, app_name: str, tag: str = '') -> bool:
         return app_name == self.name and tag == self.tag
 
+    def __eq__(self, other):
+        if isinstance(other, Application):
+            return self.id == other.id
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.id) if self.id is not None else hash((self.name, self.tag))
+
     def __repr__(self):
-        return f"<Application(name='{self.app.name}', productivity={self.is_productive}, tag={self.tag})>"
+        return f"<Application(name='{self.name}', productivity={self.is_productive}, tag={self.tag})>"
 
 
 class Workday(BaseModel):
@@ -85,3 +93,17 @@ class ScriptResponse(BaseModel):
 
     def __repr__(self):
         return f"ScriptResponse(app_type={self.app_type}, app_name={self.app_name}, tag={self.tag}"
+
+
+class ApplicationView(BaseModel):
+    name: str
+    is_productive: bool
+    elapsed_time: Optional[int] = 0
+
+    def __eq__(self, other):
+        if isinstance(other, ApplicationView):
+            return self.name == other.name and self.is_productive == other.is_productive
+        return NotImplemented
+
+    def __repr__(self):
+        return f"<Application(name='{self.app.name}', productivity={self.is_productive}, elapsed_time={self.elapsed_time})>"

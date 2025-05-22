@@ -3,7 +3,7 @@ import os
 import sys
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, desc, text
+from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 
@@ -96,11 +96,14 @@ class Database:
             session.execute(update_stmt)
 
     def save_session(self, current_session: Session):
+        today = datetime.date.today()
         with self.session_scope() as db_session:
             session = SessionModel(**Session.to_dict(current_session))
+            workday = db_session.query(WorkdayModel).filter_by(date=today).first()
+            session.workday = workday
             db_session.add(session)
 
-    def load_todays_workday(self) -> Workday:
+    def get_todays_workday(self) -> Workday:
         today = datetime.date.today()
         with self.session_scope() as session:
             workday = session.query(WorkdayModel).filter_by(date=today).first()
