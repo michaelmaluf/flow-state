@@ -1,11 +1,9 @@
 import os
 import sys
 from typing import Optional
-
-from client.claude_client import AIClient
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from client.claude_client import AIClient
 from db.database import Database
 from domain.models import ScriptResponse, Application
 from log import get_main_app_logger
@@ -13,7 +11,7 @@ from log import get_main_app_logger
 logger = get_main_app_logger(__name__)
 
 
-class ApplicationTrackingService:
+class AppTrackingService:
     def __init__(self, db: Database, ai_client: AIClient):
         self.db = db
         self.ai_client = ai_client
@@ -61,12 +59,12 @@ class ApplicationTrackingService:
         """
         formatted_msg = ''
 
-        if app_name == 'Youtube':
+        if app_name == 'youtube':
             formatted_msg = self.format_yt_video_inquiry(msg)
-        elif app_name == 'Reddit':
+        elif app_name == 'reddit':
             formatted_msg = self.format_subreddit_inquiry(msg)
         else:
-            logger.error("App name not youtube or reddit, cannot process yt or reddit")
+            logger.error(f"App name not valid for tag workflow: {app_name}")
 
         is_productive = self.ai_client.send_message(formatted_msg).lower() == 'true'
         return self.get_or_create_application(app_name, is_productive)
