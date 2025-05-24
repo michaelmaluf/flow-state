@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QFrame, QHBoxLayout
+    QFrame, QHBoxLayout, QGridLayout, QSizePolicy
 )
 
 from domain.models import ApplicationView
@@ -24,31 +24,52 @@ class HomeView(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.setStyleSheet("background-color: #20223e;")
         self.setup_ui()
 
     def setup_ui(self):
-        home_layout = QVBoxLayout(self)
+        home_layout = QGridLayout(self)
         home_layout.setContentsMargins(20, 20, 20, 20)
-        home_layout.setSpacing(20)
+        home_layout.setHorizontalSpacing(75)
+        home_layout.setVerticalSpacing(25)
 
         app_control_frame = self._create_app_control_section()
         session_frame = self._create_workday_section()
         pomodoro_frame = self._create_pomodoro_section()
         active_apps_frame = self._create_active_apps_section()
 
-        # Top row with two cards
-        top_row = QHBoxLayout()
-        top_row.addWidget(app_control_frame, 1)
-        top_row.addWidget(session_frame, 1)
+        for frame in [app_control_frame, session_frame, pomodoro_frame, active_apps_frame]:
+            frame.resize(350, 300)
+            # frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        # Bottom row with two cards
-        bottom_row = QHBoxLayout()
-        bottom_row.addWidget(pomodoro_frame, 1)
-        bottom_row.addWidget(active_apps_frame, 1)
+        # app_control_frame.setMinimumSize(350, 300)
+        # session_frame.setMinimumSize(350, 300)
+        # pomodoro_frame.setMinimumSize(350, 300)
+        # active_apps_frame.setMinimumSize(350, 300)
+
+        # app_control_frame.resize(350, 300)
+        # session_frame.resize(350, 300)
+        # pomodoro_frame.resize(350, 300)
+        # active_apps_frame.resize(350, 300)
+
+        home_layout.addWidget(app_control_frame, 0, 0)
+        home_layout.addWidget(session_frame, 0, 1)
+        home_layout.addWidget(pomodoro_frame, 1, 0)
+        home_layout.addWidget(active_apps_frame, 1, 1)
+
+        # # Top row with two cards
+        # top_row = QHBoxLayout()
+        # top_row.addWidget(app_control_frame, 1)
+        # top_row.addWidget(session_frame, 1)
+        #
+        # # Bottom row with two cards
+        # bottom_row = QHBoxLayout()
+        # bottom_row.addWidget(pomodoro_frame, 1)
+        # bottom_row.addWidget(active_apps_frame, 1)
 
         # Add top & bottom rows to main layout
-        home_layout.addLayout(top_row)
-        home_layout.addLayout(bottom_row)
+        # home_layout.addLayout(top_row)
+        # home_layout.addLayout(bottom_row)
 
     def update_application_status(self, is_tracking: bool):
         # app control section
@@ -104,8 +125,6 @@ class HomeView(QWidget):
             self.active_apps_layout.addWidget(app_card)
 
 
-        self.active_apps_layout.addStretch()
-
     def _on_start_app_clicked(self):
         self.start_app_clicked.emit()
 
@@ -122,9 +141,11 @@ class HomeView(QWidget):
         # Frame
         frame = QFrame()
         layout = QVBoxLayout(frame)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Metadata
         title = QLabel("Application Control")
+        title.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
         layout.addWidget(title)
 
@@ -168,8 +189,10 @@ class HomeView(QWidget):
     def _create_workday_section(self):
         workday_frame = QFrame()
         workday_layout = QVBoxLayout(workday_frame)
+        workday_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         workday_title = QLabel("Current Workday")
+        workday_title.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         workday_title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
         workday_layout.addWidget(workday_title)
 
@@ -223,8 +246,10 @@ class HomeView(QWidget):
     def _create_pomodoro_section(self):
         pomodoro_frame = QFrame()
         pomodoro_layout = QVBoxLayout(pomodoro_frame)
+        pomodoro_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         pomodoro_title = QLabel("Pomodoro Timer")
+        pomodoro_title.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         pomodoro_title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
         pomodoro_layout.addWidget(pomodoro_title)
 
@@ -233,7 +258,7 @@ class HomeView(QWidget):
 
         # Circular progress bar
         self.pomodoro_timer = CircularProgressBar()
-        self.pomodoro_timer.setMinimumSize(200, 200)
+        self.pomodoro_timer.setMinimumSize(175, 175)
         self.pomodoro_timer.setText("", ":00")
 
         timer_layout.addWidget(self.pomodoro_timer, 1, Qt.AlignmentFlag.AlignCenter)
@@ -275,14 +300,17 @@ class HomeView(QWidget):
         timer_buttons_layout.addWidget(self.pomodoro_end_button)
 
         pomodoro_layout.addLayout(timer_buttons_layout)
+        pomodoro_layout.addStretch()
 
         return pomodoro_frame
 
     def _create_active_apps_section(self):
         active_apps_frame = QFrame()
         self.active_apps_layout = QVBoxLayout(active_apps_frame)
+        self.active_apps_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         active_apps_title = QLabel("Recent Applications")
+        active_apps_title.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop)
         active_apps_title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
         self.active_apps_layout.addWidget(active_apps_title)
 
@@ -290,6 +318,9 @@ class HomeView(QWidget):
             ApplicationView(name="VS Code", is_productive=True, elapsed_time=25),
             ApplicationView(name="Terminal", is_productive=True, elapsed_time=15),
             ApplicationView(name="Slack", is_productive=False, elapsed_time=10),
+            ApplicationView(name="Twitter", is_productive=True, elapsed_time=55),
         ]))
+
+        self.active_apps_layout.addStretch()
 
         return active_apps_frame

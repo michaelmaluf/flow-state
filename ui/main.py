@@ -25,19 +25,24 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle('FlowState')
         self.setGeometry(100, 100, 1200, 800)
+        self.setContentsMargins(80, 20, 80, 80)
+        self.setObjectName("mainWindow")
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #1e2130;
+                background-color: #171620;
             }
+
             QTabWidget::pane {
                 border: none;
                 background-color: #1e2130;
+                
             }
             QTabBar::tab {
                 background-color: #2d3142;
                 color: white;
                 padding: 15px 100px;
                 font-size: 16px;
+                margin-bottom: 1em;
             }
             QTabBar::tab:selected {
                 background-color: #4a69dd;
@@ -66,14 +71,16 @@ class MainWindow(QMainWindow):
                 background-color: #4d5165;
             }
             QFrame {
-                background-color: #2d3142;
+                background-color: #171620;
                 border-radius: 10px;
+                text-align: center;
             }
         """)
 
         # Create tab widget
         self.tabs = QTabWidget()
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
+        self.tabs.setContentsMargins(0, 0, 0, 100)
 
         # Create tabs
         self.home_tab = HomeView()
