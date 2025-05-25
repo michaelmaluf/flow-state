@@ -10,8 +10,11 @@ class AppCard(QFrame):
             #appCard {
                 background-color: #2d3142;
                 border-radius: 8px;
-                padding: 10px;
-                margin: 5px;
+                padding: 3px;
+                margin: 2px;
+            }
+            #appCard QLabel {
+                background-color: transparent;
             }
         """)
 
@@ -37,4 +40,4 @@ class AppCard(QFrame):
         layout.addStretch()
         layout.addWidget(time_label)
 
-        self.setLayout(layout)
+        # self.setLayout(layout)

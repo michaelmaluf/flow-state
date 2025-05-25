@@ -1,6 +1,7 @@
 import sys
 
 import matplotlib
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QTabWidget)
 
 from client.claude_client import ClaudeClient
@@ -42,6 +43,7 @@ class MainWindow(QMainWindow):
                 color: white;
                 padding: 15px 100px;
                 font-size: 16px;
+                font-weight: bold;
                 margin-bottom: 1em;
             }
             QTabBar::tab:selected {
@@ -57,6 +59,9 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 10px;
                 font-size: 16px;
+            }
+            QPushButton:disabled {
+                background-color: #2d3142;
             }
             QPushButton:hover {
                 background-color: #5a79ed;
@@ -99,6 +104,10 @@ class MainWindow(QMainWindow):
         self.hide()
         event.ignore()
         '''
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.tabs.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
 
     def handle_graceful_exit(self):
         self.home_tab.stop_app_clicked.emit()

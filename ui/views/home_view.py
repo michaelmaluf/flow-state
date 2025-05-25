@@ -3,6 +3,7 @@ from collections import deque
 from PyQt6.QtCore import (
     pyqtSignal, Qt,
 )
+from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
@@ -24,7 +25,13 @@ class HomeView(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setStyleSheet("background-color: #20223e;")
+        self.setStyleSheet("""
+                QFrame {
+                    background-color: #20223e;
+                    border-radius: 10px;
+                    text-align: center;
+                }
+                """)
         self.setup_ui()
 
     def setup_ui(self):
@@ -39,6 +46,7 @@ class HomeView(QWidget):
         active_apps_frame = self._create_active_apps_section()
 
         for frame in [app_control_frame, session_frame, pomodoro_frame, active_apps_frame]:
+            frame.setContentsMargins(25, 0, 25, 10)
             frame.resize(350, 300)
             # frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
@@ -83,6 +91,12 @@ class HomeView(QWidget):
         self.status_text.setText(
             "Application Running" if is_tracking else "Application Stopped"
         )
+        self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.stop_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def update_productive_time(self, time: int):
         hours, minutes = divmod(time // 60, 60)
@@ -118,12 +132,13 @@ class HomeView(QWidget):
 
             # Set color based on productivity
             if app.is_productive:
-                app_card.setStyleSheet("#appCard { border-left: 5px solid #4ade80; }")
+                app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #4ade80; }")
             else:
-                app_card.setStyleSheet("#appCard { border-left: 5px solid #ef4444; }")
+                app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #ef4444; }")
 
             self.active_apps_layout.addWidget(app_card)
 
+        self.active_apps_layout.addStretch()
 
     def _on_start_app_clicked(self):
         self.start_app_clicked.emit()
@@ -168,7 +183,7 @@ class HomeView(QWidget):
 
         # Create status indicator
         status_frame = QFrame()
-        status_frame.setStyleSheet("background-color: #252837;")
+        status_frame.setStyleSheet("background-color: #2d3142;")
         status_layout = QHBoxLayout(status_frame)
 
         self.status_indicator = QLabel("●")
@@ -176,8 +191,10 @@ class HomeView(QWidget):
 
         self.status_text = QLabel("Application Stopped")
         self.status_text.setStyleSheet("font-size: 16px;")
+        self.status_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         status_layout.addWidget(self.status_indicator)
+        status_layout.addStretch()
         status_layout.addWidget(self.status_text)
         status_layout.addStretch()
 
@@ -198,12 +215,25 @@ class HomeView(QWidget):
 
         # Time counters
         time_layout = QHBoxLayout()
+        time_layout.setSpacing(20)
 
         # Productive time
-        prod_time_layout = QVBoxLayout()
+        prod_time_frame = QFrame()
+        prod_time_frame.setObjectName("prodTimeFrame")
+        prod_time_frame.setStyleSheet("""
+            #prodTimeFrame {
+                border-radius: 8px;
+                background-color: #2d3142;
+            }
+            #prodTimeFrame QLabel {
+                background-color: transparent;
+            }
+        """)
+
+        prod_time_layout = QVBoxLayout(prod_time_frame)
         prod_time_label = QLabel("Productive Time")
         prod_time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        prod_time_label.setStyleSheet("font-size: 16px;")
+        prod_time_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         self.prod_time_value = QLabel("0:45")
         self.prod_time_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -218,10 +248,22 @@ class HomeView(QWidget):
         prod_time_layout.addWidget(prod_time_unit)
 
         # Non-productive time
-        nonprod_time_layout = QVBoxLayout()
+        non_prod_time_frame = QFrame()
+        non_prod_time_frame.setObjectName("nonProdTimeFrame")
+        non_prod_time_frame.setStyleSheet("""
+                    #nonProdTimeFrame {
+                        border-radius: 8px;
+                        background-color: #2d3142;
+                    }
+                    #nonProdTimeFrame QLabel {
+                        background-color: transparent;
+                    }
+                """)
+
+        nonprod_time_layout = QVBoxLayout(non_prod_time_frame)
         nonprod_time_label = QLabel("Non-Productive Time")
         nonprod_time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        nonprod_time_label.setStyleSheet("font-size: 16px;")
+        nonprod_time_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         self.nonprod_time_value = QLabel("0:25")
         self.nonprod_time_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -235,8 +277,10 @@ class HomeView(QWidget):
         nonprod_time_layout.addWidget(self.nonprod_time_value)
         nonprod_time_layout.addWidget(nonprod_time_unit)
 
-        time_layout.addLayout(prod_time_layout)
-        time_layout.addLayout(nonprod_time_layout)
+        prod_time_frame.setMinimumWidth(175)
+        non_prod_time_frame.setMinimumWidth(175)
+        time_layout.addWidget(prod_time_frame, 1)
+        time_layout.addWidget(non_prod_time_frame, 1)
 
         workday_layout.addLayout(time_layout)
         workday_layout.addStretch()
@@ -247,10 +291,13 @@ class HomeView(QWidget):
         pomodoro_frame = QFrame()
         pomodoro_layout = QVBoxLayout(pomodoro_frame)
         pomodoro_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pomodoro_layout.setSpacing(25)
+
+        pomodoro_layout.addStretch()
 
         pomodoro_title = QLabel("Pomodoro Timer")
         pomodoro_title.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
-        pomodoro_title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
+        pomodoro_title.setStyleSheet("font-size: 24px; font-weight: bold;")
         pomodoro_layout.addWidget(pomodoro_title)
 
         # Timer display
@@ -261,12 +308,16 @@ class HomeView(QWidget):
         self.pomodoro_timer.setMinimumSize(175, 175)
         self.pomodoro_timer.setText("", ":00")
 
-        timer_layout.addWidget(self.pomodoro_timer, 1, Qt.AlignmentFlag.AlignCenter)
+        timer_layout.addWidget(self.pomodoro_timer, 3, Qt.AlignmentFlag.AlignCenter)
 
         # Pomodoros remaining
         pomodoros_frame = QFrame()
-        pomodoros_frame.setStyleSheet("background-color: #252837;")
+        pomodoros_frame.setStyleSheet("background-color: #2d3142;")
         pomodoros_layout = QVBoxLayout(pomodoros_frame)
+
+        pomodoros_header = QLabel("Pomodoros")
+        pomodoros_header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pomodoros_header.setStyleSheet("font-size: 20px;")
 
         self.pomodoros_remaining = QLabel("4")
         self.pomodoros_remaining.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -274,11 +325,13 @@ class HomeView(QWidget):
 
         pomodoros_label = QLabel("remaining")
         pomodoros_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pomodoros_label.setStyleSheet("font-size: 14px;")
 
+        pomodoros_layout.addWidget(pomodoros_header)
         pomodoros_layout.addWidget(self.pomodoros_remaining)
         pomodoros_layout.addWidget(pomodoros_label)
 
-        timer_layout.addWidget(pomodoros_frame)
+        timer_layout.addWidget(pomodoros_frame, 2, Qt.AlignmentFlag.AlignCenter)
 
         pomodoro_layout.addLayout(timer_layout)
 
@@ -287,12 +340,14 @@ class HomeView(QWidget):
 
         self.pomodoro_start_button = QPushButton("▶ Pomodoro")
         self.pomodoro_start_button.setFixedHeight(50)
+        self.pomodoro_start_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.pomodoro_start_button.setEnabled(False)
         self.pomodoro_start_button.clicked.connect(self._on_start_pomodoro_clicked)
 
         self.pomodoro_end_button = QPushButton("■ End")
         self.pomodoro_end_button.setObjectName("cancelButton")
         self.pomodoro_end_button.setFixedHeight(50)
+        self.pomodoro_end_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.pomodoro_end_button.setVisible(False)
         self.pomodoro_end_button.clicked.connect(self._on_end_pomodoro_clicked)
 
