@@ -3,6 +3,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
+from ui.components import PieChart
+
 
 class AnalyticsView(QWidget):
 
@@ -46,9 +48,11 @@ class AnalyticsView(QWidget):
         time_title.setStyleSheet("font-size: 30px; font-weight: bold; color: #fff;")
         time_analysis_layout.addWidget(time_title, alignment=Qt.AlignmentFlag.AlignLeft)
 
+        # TODO: qcombox width is currently filling / stretching (set margins or center it)
+
         # Dropdown menu (styled QComboBox)
         dropdown = QComboBox()
-        dropdown.addItems(["Today", "This Week", "This Month"])
+        dropdown.addItems(["Today       ▼", "This Week      ▼", "This Month     ▼"])
         dropdown.setCurrentIndex(0)
         dropdown.setStyleSheet("""
             QComboBox {
@@ -63,11 +67,6 @@ class AnalyticsView(QWidget):
             QComboBox::drop-down {
                 border: none;
             }
-            QComboBox::down-arrow {
-                image: url(:/qt-project.org/styles/commonstyle/images/arrowdown-16.png);
-                width: 16px;
-                height: 16px;
-            }
             QComboBox QAbstractItemView {
                 background: #23263a;
                 color: #bfc7d5;
@@ -78,11 +77,8 @@ class AnalyticsView(QWidget):
         time_analysis_layout.addWidget(dropdown, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Pie chart placeholder
-        pie_chart = QLabel("[Pie Chart]")
-        pie_chart.setFixedSize(220, 220)
-        pie_chart.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pie_chart.setStyleSheet("background: #181a20; border-radius: 110px; color: #fff; font-size: 1.2rem;")
-        time_analysis_layout.addWidget(pie_chart, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.pie_chart = PieChart(productive_percent=65)
+        time_analysis_layout.addWidget(self.pie_chart, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Productive/Non-Productive summary boxes
         prod_box = QFrame()
@@ -92,7 +88,7 @@ class AnalyticsView(QWidget):
                 background: #182a20; 
                 border: 1.5px solid #2ecc71; 
                 border-radius: 14px; 
-                padding: 16px;
+                padding: 0px 16px;
             } 
             #prodFrame QLabel {
                 background: transparent;
@@ -104,15 +100,15 @@ class AnalyticsView(QWidget):
         prod_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         prod_label = QLabel("Productive Time")
-        prod_label.setStyleSheet("color: #2ecc71; font-size: 1.2rem; font-weight: bold;")
+        prod_label.setStyleSheet("color: #2ecc71; font-size: 14px; font-weight: bold;")
         prod_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.prod_percent = QLabel("65%")
         self.prod_percent.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.prod_percent.setStyleSheet("color: #2ecc71; font-size: 1.2rem; font-weight: bold;")
+        self.prod_percent.setStyleSheet("color: #2ecc71; font-size: 24px; font-weight: bold;")
         self.prod_time = QLabel("5h 12m")
         self.prod_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.prod_time.setStyleSheet("color: #2ecc71; font-size: 1.2rem; font-weight: bold;")
+        self.prod_time.setStyleSheet("color: #a9d2a9; font-size: 1.2rem; font-weight: bold;")
 
         prod_layout.addWidget(prod_label)
         prod_layout.addWidget(self.prod_percent)
@@ -127,7 +123,7 @@ class AnalyticsView(QWidget):
                 background: #2a181a; 
                 border: 1.5px solid #e74c3c; 
                 border-radius: 14px; 
-                padding: 16px;
+                padding: 0px 16px;
             } 
             #nonProdFrame QLabel {
                 background: transparent;
@@ -138,18 +134,18 @@ class AnalyticsView(QWidget):
         nonprod_layout = QVBoxLayout(nonprod_box)
         nonprod_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nonprod_label = QLabel("Non-Productive Time")
-        nonprod_label.setStyleSheet("color: #e74c3c; font-size: 1.2rem; font-weight: bold;")
+        nonprod_label.setStyleSheet("color: #e74c3c; font-size: 14px; font-weight: bold;")
         nonprod_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.nonprod_percent = QLabel("35%")
         self.nonprod_percent.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.nonprod_percent.setStyleSheet("color: #e74c3c; font-size: 1.2rem; font-weight: bold;")
+        self.nonprod_percent.setStyleSheet("color: #e74c3c; font-size: 24px; font-weight: bold;")
         self.nonprod_time = QLabel("2h 48m")
         self.nonprod_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.nonprod_time.setStyleSheet("color: #e74c3c; font-size: 1.2rem; font-weight: bold;")
+        self.nonprod_time.setStyleSheet("color: #bea9a9; font-size: 1.2rem; font-weight: bold;")
 
 
-        nonprod_layout.addWidget(nonprod_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        nonprod_layout.addWidget(nonprod_label)
         nonprod_layout.addWidget(self.nonprod_percent)
         nonprod_layout.addWidget(self.nonprod_time)
 
@@ -157,7 +153,7 @@ class AnalyticsView(QWidget):
 
         # Total tracked label
         total_tracked = QLabel("Total Tracked: 8h 0m")
-        total_tracked.setStyleSheet("color: #bfc7d5; font-size: 1rem; margin-top: 12px;")
+        total_tracked.setStyleSheet("color: #bfc7d5; font-size: 14px; margin-top: 12px;")
         time_analysis_layout.addWidget(total_tracked, alignment=Qt.AlignmentFlag.AlignCenter)
         time_analysis_layout.addStretch()
 

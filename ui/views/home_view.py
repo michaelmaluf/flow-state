@@ -22,6 +22,7 @@ class HomeView(QWidget):
     stop_app_clicked = pyqtSignal()
     start_pomodoro_clicked = pyqtSignal()
     end_pomodoro_clicked = pyqtSignal()
+    request_initial_data = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
@@ -97,6 +98,7 @@ class HomeView(QWidget):
         super().showEvent(event)
         self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.stop_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        # TODO: call the load initial data to propulate view with data on load
 
     def update_productive_time(self, time: int):
         hours, minutes = divmod(time // 60, 60)
