@@ -3,9 +3,10 @@ import os
 import sys
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, func
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
+from sqlalchemy.sql.operators import from_
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -82,7 +83,7 @@ class Database:
     def bulk_save_workday_applications(self, workday_applications: list[WorkdayApplication]):
         with self.session_scope() as session:
             values = [
-                {k: v for k, v in app.dict().items() if k != 'id'}
+                {k: v for k, v in app.dict().items() if k not in ['id', 'application']}
                 for app in workday_applications
             ]
 
@@ -125,22 +126,39 @@ class Database:
     def activate_pomodoro(self, workday: Workday) -> bool:
         pass
 
+    def get_all_workdays_from(self, date: datetime.date) -> list[Workday]:
+        with self.session_scope() as session:
+            workdays = (session.query(WorkdayModel)
+                        .options(joinedload(WorkdayModel.workday_applications)
+                                 .joinedload(WorkdayApplicationModel.application))
+                        .filter(WorkdayModel.date > date)
+                        .all())
 
+            return [Workday.from_orm(workday) for workday in workdays]
 
-    # def get_today_stats(self):
-    #     session = self.get_session()
-    #     workday = self.get_or_create_workday()
-    #
-    #     result = {
-    #         'productive_time': workday.productive_time_seconds,
-    #         'non_productive_time': workday.non_productive_time_seconds,
-    #         'pomodoros_left': workday.pomodoros_left,
-    #         'total_time': workday.productive_time_seconds + workday.non_productive_time_seconds,
-    #         'productivity_ratio': 0
-    #     }
-    #
-    #     if result['total_time'] > 0:
-    #         result['productivity_ratio'] = workday.productive_time_seconds / result['total_time']
-    #
-    #     session.close()
-    #     return result
+    def get_workday_totals_from(self, date: datetime.date):
+        with self.session_scope() as session:
+            workday_totals = (session.query(
+                func.coalesce(func.sum(WorkdayModel.productive_time_seconds), 0).label('total_productive'),
+                func.coalesce(func.sum(WorkdayModel.non_productive_time_seconds), 0).label('total_non_productive'),
+            )
+                              .filter(WorkdayModel.date > date)
+                              .first())
+
+            return workday_totals.total_productive, workday_totals.total_non_productive
+
+    def get_workday_application_totals_from(self, date: datetime.date):
+        with self.session_scope() as session:
+            app_breakdowns = (session.query(
+                ApplicationModel.name,
+                ApplicationModel.is_productive,
+                func.sum(WorkdayApplicationModel.time_seconds).label('total_time')
+            )
+                              .join(WorkdayApplicationModel.application)
+                              .join(WorkdayApplicationModel.workday)
+                              .filter(WorkdayModel.date >= date)
+                              .group_by(ApplicationModel.id, ApplicationModel.name, ApplicationModel.is_productive)
+                              .order_by(func.sum(WorkdayApplicationModel.time_seconds).desc())
+                              .all())
+
+            return app_breakdowns

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Application(BaseModel):
@@ -30,23 +30,29 @@ class Application(BaseModel):
         return f"<Application(name='{self.name}', productivity={self.is_productive}, tag={self.tag})>"
 
 
+class WorkdayApplication(BaseModel):
+    id: Optional[int] = None
+    workday_id: int
+    application_id: int
+    time_seconds: int
+    application: Optional[Application] = None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
 class Workday(BaseModel):
     id: int
     date: datetime
     pomodoros_left: int
     productive_time_seconds: int
     non_productive_time_seconds: int
+    workday_applications: Optional[list[WorkdayApplication]] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True
     )
-
-
-class WorkdayApplication(BaseModel):
-    id: Optional[int] = None
-    workday_id: int
-    application_id: int
-    time_seconds: int
 
 
 class Session(BaseModel):
@@ -83,6 +89,11 @@ class ScriptResponse(BaseModel):
     app_name: str
     tag: Optional[str] = ''
 
+    @field_validator('app_name')
+    @classmethod
+    def normalize_app_name(cls, v):
+        return v.strip().lower() if v else v
+
     @classmethod
     def from_arr(cls, *args):
         return ScriptResponse(
@@ -99,6 +110,7 @@ class ApplicationView(BaseModel):
     name: str
     is_productive: bool
     elapsed_time: Optional[int] = 0
+    percent_usage: Optional[float] = 0
 
     def __eq__(self, other):
         if isinstance(other, ApplicationView):
