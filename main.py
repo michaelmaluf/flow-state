@@ -4,6 +4,9 @@ import sys
 import signal
 from PyQt6.QtWidgets import QApplication
 
+from controller.analytics_controller import AnalyticsController
+from services.analytics_service import AnalyticsService
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from client.pi_client import PiClient
@@ -20,21 +23,26 @@ logger = get_main_app_logger(__name__)
 app: QApplication | None = None
 window: MainWindow | None = None
 flow_state_controller: FlowStateController | None = None
+analytics_controller: AnalyticsController | None = None
 
 # TODO: fix ui somehow lol, look into making this a desktop application AND THEN look into completing analytics tab
 # TODO: test that times and flushes and workflow is working, appears to be running smoothly but test for the day
 
 def create_app():
-    global app, window, flow_state_controller
+    global app, window, flow_state_controller, analytics_controller
 
     app = QApplication([])
     window = MainWindow()
 
     db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
+
     pi_client = PiClient("http://192.168.1.28:5050")
     ai_client = ClaudeClient(sys.argv[2])
     flow_state_service = FlowStateService(db, ai_client, pi_client)
     flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
+
+    analytics_service = AnalyticsService(db)
+    analytics_controller = AnalyticsController(window.analytics_tab, analytics_service)
 
 
 def signal_handler(signum, frame):
