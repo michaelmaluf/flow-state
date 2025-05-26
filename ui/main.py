@@ -8,6 +8,7 @@ from client.claude_client import ClaudeClient
 from client.pi_client import PiClient
 from controller.flow_state_controller import FlowStateController
 from db.database import Database
+from domain.analytics import TimeFrame
 from log import setup_logging, get_main_app_logger
 from services.flow_state_service import FlowStateService
 from ui.views.analytics_view import AnalyticsView
@@ -108,6 +109,7 @@ class MainWindow(QMainWindow):
     def showEvent(self, event):
         super().showEvent(event)
         self.tabs.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+        self.analytics_tab.analytics_report_requested.emit(TimeFrame.TODAY)
 
     def handle_graceful_exit(self):
         self.home_tab.stop_app_clicked.emit()

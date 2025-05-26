@@ -22,7 +22,7 @@ class HomeView(QWidget):
     stop_app_clicked = pyqtSignal()
     start_pomodoro_clicked = pyqtSignal()
     end_pomodoro_clicked = pyqtSignal()
-    request_initial_data = pyqtSignal(object)
+    request_initial_data = pyqtSignal()
 
     def __init__(self):
         super().__init__()

@@ -29,8 +29,10 @@ class AppCard(QFrame):
             minutes, seconds = divmod(time_spent, 60)
             time_text = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
 
-        if percentage:
-            time_text += f" ({percentage})"
+        if percentage is not None:
+            hours, seconds = divmod(time_spent, 3600)
+            time_text = f"{hours}h {seconds//60}m" if hours else f"{seconds//60}m"
+            time_text += f" ({percentage}%)"
 
         time_label = QLabel(time_text)
         time_label.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")

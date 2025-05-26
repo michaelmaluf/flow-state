@@ -1,12 +1,15 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton, QTabWidget, QTabBar, QGridLayout, QComboBox
+    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton, QTabWidget, QTabBar, QGridLayout, QComboBox, QSizePolicy, QScrollArea
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 
-from ui.components import PieChart
+from domain.analytics import AnalyticsReport, TimeFrame
+from domain.models import ApplicationView
+from ui.components import PieChart, AppCard
 
 
 class AnalyticsView(QWidget):
+    analytics_report_requested = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
@@ -16,43 +19,42 @@ class AnalyticsView(QWidget):
         # Main horizontal layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(100)
+        main_layout.setSpacing(50)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Left: Time Analysis (1/3)
         time_analysis_frame = self._create_time_analysis_section()
-        # Right: Application Breakdown (2/3)
         breakdown_frame = self._create_breakdown_section()
 
-        main_layout.addWidget(time_analysis_frame, stretch=1)
-        main_layout.addWidget(breakdown_frame, stretch=2)
+        main_layout.addWidget(time_analysis_frame, 1)
+        main_layout.addWidget(breakdown_frame, 2)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.tabs.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def update_with_analytics_report(self, analytics_report: AnalyticsReport):
+        self._update_time_analysis_section(analytics_report)
+        self._update_breakdown_section(analytics_report)
+
 
     def _create_time_analysis_section(self):
         time_analysis_frame = QFrame()
         time_analysis_frame.setObjectName('timeAnalysisFrame')
-        # time_analysis_frame.setStyleSheet("""
-        #     QFrame#timeAnalysisFrame {
-        #         background-color: #23263a;
-        #         border-radius: 32px;
-        #         padding: 32px;
-        #     }
-        # """)
-        time_analysis_frame.setMinimumWidth(340)
-        time_analysis_frame.setMaximumWidth(380)
+
         time_analysis_layout = QVBoxLayout(time_analysis_frame)
-        time_analysis_layout.setSpacing(24)
+        time_analysis_layout.setContentsMargins(0, 10, 50, 10)
+        time_analysis_layout.setSpacing(18)
         time_analysis_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Title
         time_title = QLabel("Time Analysis")
         time_title.setStyleSheet("font-size: 30px; font-weight: bold; color: #fff;")
-        time_analysis_layout.addWidget(time_title, alignment=Qt.AlignmentFlag.AlignLeft)
+        time_analysis_layout.addWidget(time_title, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # TODO: qcombox width is currently filling / stretching (set margins or center it)
 
         # Dropdown menu (styled QComboBox)
         dropdown = QComboBox()
-        dropdown.addItems(["Today       ▼", "This Week      ▼", "This Month     ▼"])
+        dropdown.addItems(["Today       ▼", "This Week      ▼", "This Month     ▼", "All Time     ▼"])
         dropdown.setCurrentIndex(0)
         dropdown.setStyleSheet("""
             QComboBox {
@@ -74,7 +76,8 @@ class AnalyticsView(QWidget):
                 selection-background-color: #35395a;
             }
         """)
-        time_analysis_layout.addWidget(dropdown, alignment=Qt.AlignmentFlag.AlignLeft)
+        dropdown.currentIndexChanged.connect(self._on_dropdown_index_changed)
+        time_analysis_layout.addWidget(dropdown, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Pie chart placeholder
         self.pie_chart = PieChart(productive_percent=65)
@@ -82,13 +85,15 @@ class AnalyticsView(QWidget):
 
         # Productive/Non-Productive summary boxes
         prod_box = QFrame()
+        prod_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        prod_box.setMaximumWidth(250)
         prod_box.setObjectName("prodFrame")
         prod_box.setStyleSheet("""
             #prodFrame {
                 background: #182a20; 
                 border: 1.5px solid #2ecc71; 
                 border-radius: 14px; 
-                padding: 0px 16px;
+                padding: 0px 50px;
             } 
             #prodFrame QLabel {
                 background: transparent;
@@ -114,16 +119,18 @@ class AnalyticsView(QWidget):
         prod_layout.addWidget(self.prod_percent)
         prod_layout.addWidget(self.prod_time)
 
-        time_analysis_layout.addWidget(prod_box)
+        time_analysis_layout.addWidget(prod_box, alignment=Qt.AlignmentFlag.AlignCenter)
 
         nonprod_box = QFrame()
+        nonprod_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        nonprod_box.setMaximumWidth(250)
         nonprod_box.setObjectName("nonProdFrame")
         nonprod_box.setStyleSheet("""
             #nonProdFrame {
                 background: #2a181a; 
                 border: 1.5px solid #e74c3c; 
                 border-radius: 14px; 
-                padding: 0px 16px;
+                padding: 0px 35px;
             } 
             #nonProdFrame QLabel {
                 background: transparent;
@@ -149,12 +156,12 @@ class AnalyticsView(QWidget):
         nonprod_layout.addWidget(self.nonprod_percent)
         nonprod_layout.addWidget(self.nonprod_time)
 
-        time_analysis_layout.addWidget(nonprod_box)
+        time_analysis_layout.addWidget(nonprod_box, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Total tracked label
-        total_tracked = QLabel("Total Tracked: 8h 0m")
-        total_tracked.setStyleSheet("color: #bfc7d5; font-size: 14px; margin-top: 12px;")
-        time_analysis_layout.addWidget(total_tracked, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.total_tracked = QLabel("Total Tracked: 8h 0m")
+        self.total_tracked.setStyleSheet("color: #bfc7d5; font-size: 14px; margin-top: 12px;")
+        time_analysis_layout.addWidget(self.total_tracked, alignment=Qt.AlignmentFlag.AlignCenter)
         time_analysis_layout.addStretch()
 
         return time_analysis_frame
@@ -174,18 +181,22 @@ class AnalyticsView(QWidget):
 
         # Title
         breakdown_title = QLabel("Application Breakdown")
-        breakdown_title.setStyleSheet("font-size: 2rem; font-weight: bold; color: #fff;")
+        breakdown_title.setStyleSheet("font-size: 30px; font-weight: bold; color: #fff; background-color: transparent;")
         breakdown_layout.addWidget(breakdown_title, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Tabs for Productive/Non-Productive
-        tabs = QTabWidget()
-        tabs.setTabPosition(QTabWidget.TabPosition.North)
-        tabs.setStyleSheet("""
+        self.tabs = QTabWidget()
+        self.tabs.setTabPosition(QTabWidget.TabPosition.North)
+        self.tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        tab_bar = self.tabs.tabBar()
+        tab_bar.setExpanding(False)
+
+        self.tabs.setStyleSheet("""
             QTabBar::tab {
                 background: #35395a;
                 color: #bfc7d5;
                 padding: 12px 32px;
-                font-size: 1.1rem;
+                font-size: 16px;
                 font-weight: bold;
                 border-top-left-radius: 10px;
                 border-top-right-radius: 10px;
@@ -195,40 +206,157 @@ class AnalyticsView(QWidget):
                 background: #4a69dd;
                 color: #fff;
             }
+            QTabWidget::tab-bar {
+                alignment: left; 
+            }
         """)
-        prod_tab = QWidget()
-        nonprod_tab = QWidget()
-        tabs.addTab(prod_tab, "Productive")
-        tabs.addTab(nonprod_tab, "Non-Productive")
-        breakdown_layout.addWidget(tabs)
 
-        # Productive tab content (list of apps)
-        prod_tab_layout = QVBoxLayout(prod_tab)
-        for app, time, percent in [
-            ("VS Code", "2h 30m", "48%"),
-            ("Terminal", "1h 15m", "24%"),
-            ("Docker Desktop", "45m", "15%"),
-            ("Slack", "30m", "10%"),
-            ("Outlook", "12m", "3%"),
-            ("Confluence", "20m", "6%"),
-        ]:
-            app_row = QFrame()
-            app_row.setStyleSheet("background: #35395a; border-radius: 12px; padding: 12px 24px;")
-            row_layout = QHBoxLayout(app_row)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(0)
-            app_label = QLabel(app)
-            app_label.setStyleSheet("color: #fff; font-size: 1.1rem;")
-            time_label = QLabel(f"{time} ({percent})")
-            time_label.setStyleSheet("color: #bfc7d5; font-size: 1.1rem;")
-            row_layout.addWidget(app_label)
-            row_layout.addStretch()
-            row_layout.addWidget(time_label)
-            prod_tab_layout.addWidget(app_row)
-        prod_tab_layout.addStretch()
+        prod_tab = self.create_app_list(productive=True)
+        nonprod_tab = self.create_app_list(productive=False)
 
-        # Non-Productive tab content (empty for now)
-        nonprod_tab_layout = QVBoxLayout(nonprod_tab)
-        nonprod_tab_layout.addStretch()
+        self.tabs.addTab(prod_tab, "Productive")
+        self.tabs.addTab(nonprod_tab, "Non-Productive")
+        breakdown_layout.addWidget(self.tabs, 1)
 
         return breakdown_frame
+
+    def update_app_breakdowns(self, apps: list[ApplicationView], total_time_reference: int, productive=True):
+        content_layout = self.prod_content_layout if productive else self.nonprod_content_layout
+
+        while content_layout.count() > 0:
+            item = content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        for app in apps:
+            app_card = AppCard(app.name, app.elapsed_time, int(round(app.elapsed_time / max(1, total_time_reference) * 100)))
+            content_layout.addWidget(app_card)
+
+        content_layout.addStretch()
+
+    def create_app_list(self, productive=True):
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        # Style the scroll area
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+            }
+            QScrollBar:vertical {
+                background-color: #2a2d42;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #4361ee;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #5a79ed;
+            }
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                border: none;
+                background: none;
+                height: 0px;
+                subcontrol-position: none;
+            }
+            QScrollBar::up-arrow:vertical,
+            QScrollBar::down-arrow:vertical {
+                width: 0px;
+                height: 0px;
+                background: none;
+            }
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
+
+        content_widget = QWidget()
+        content_widget.setStyleSheet("""
+            background-color: #23263a;
+        """)
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(20, 20, 20, 20)
+        content_layout.setSpacing(10)
+        content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Sample apps data (make it longer to test scrolling)
+        if productive:
+            self.prod_content_layout = content_layout
+            apps = [
+                ApplicationView(name="VS Code", is_productive=True, elapsed_time=2 * 3600 + 30 * 60),
+                ApplicationView(name="Terminal", is_productive=True, elapsed_time=1 * 3600 + 15 * 60),
+                ApplicationView(name="Docker Desktop", is_productive=True, elapsed_time=45 * 60),
+                ApplicationView(name="IntelliJ IDEA", is_productive=True, elapsed_time=1 * 3600 + 5 * 60),
+                ApplicationView(name="Figma", is_productive=True, elapsed_time=35 * 60),
+                ApplicationView(name="Postman", is_productive=True, elapsed_time=25 * 60),
+                ApplicationView(name="GitHub Desktop", is_productive=True, elapsed_time=20 * 60),
+                ApplicationView(name="Notion", is_productive=True, elapsed_time=15 * 60),
+                ApplicationView(name="Notion", is_productive=True, elapsed_time=15 * 60),
+                ApplicationView(name="Notion", is_productive=True, elapsed_time=15 * 60),
+                ApplicationView(name="Notion", is_productive=True, elapsed_time=15 * 60),
+                ApplicationView(name="Notion", is_productive=True, elapsed_time=15 * 60),
+            ]
+        else:
+            self.nonprod_content_layout = content_layout
+            apps = [
+                ApplicationView(name="Slack", is_productive=False, elapsed_time=30 * 60),
+                ApplicationView(name="Outlook", is_productive=False, elapsed_time=12 * 60),
+                ApplicationView(name="Confluence", is_productive=False, elapsed_time=20 * 60),
+                ApplicationView(name="Teams", is_productive=False, elapsed_time=18 * 60),
+                ApplicationView(name="Twitter", is_productive=False, elapsed_time=25 * 60),
+                ApplicationView(name="YouTube", is_productive=False, elapsed_time=40 * 60),
+                ApplicationView(name="Reddit", is_productive=False, elapsed_time=15 * 60),
+            ]
+
+        self.update_app_breakdowns(apps, productive)
+
+        scroll_area.setWidget(content_widget)
+        main_layout.addWidget(scroll_area)
+
+        return main_widget
+
+    def _on_dropdown_index_changed(self, index):
+        if index == 0:
+            self.analytics_report_requested.emit(TimeFrame.TODAY)
+        elif index == 1:
+            self.analytics_report_requested.emit(TimeFrame.WEEK)
+        elif index == 2:
+            self.analytics_report_requested.emit(TimeFrame.MONTH)
+        else:
+            self.analytics_report_requested.emit(TimeFrame.ALL)
+
+    def _update_time_analysis_section(self, analytics_report):
+        overall_time = max(1, analytics_report.overall_time)
+
+        prod_percent = int(round(analytics_report.productive_time / overall_time * 100))
+        self.pie_chart.set_data(prod_percent)
+        self.prod_percent.setText(f"{prod_percent}%")
+        self.prod_time.setText(self._format_time_from_seconds(analytics_report.productive_time))
+
+        nonprod_percent = int(round(analytics_report.non_productive_time / overall_time * 100))
+        self.nonprod_percent.setText(f"{nonprod_percent}%")
+        self.nonprod_time.setText(self._format_time_from_seconds(analytics_report.non_productive_time))
+
+        self.total_tracked.setText(f"Total Tracked: {self._format_time_from_seconds(overall_time)}")
+
+    def _update_breakdown_section(self, analytics_report):
+        self.update_app_breakdowns(analytics_report.productive_time_breakdown, analytics_report.productive_time)
+        self.update_app_breakdowns(analytics_report.non_productive_time_breakdown, analytics_report.non_productive_time, productive=False)
+
+    def _format_time_from_seconds(self, seconds: int):
+        hours, remainder = divmod(seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        return f"{hours}h {minutes}m" if hours else f"{minutes}m"
