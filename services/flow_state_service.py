@@ -30,7 +30,7 @@ class FlowStateService(QObject):
 
         self.app_monitor = AppMonitorService()
         self.is_tracking = False
-        self.threadpool = QThreadPool()
+        self.threadpool = QThreadPool.globalInstance()
 
         self.workday = self.db.get_todays_workday()
         self.current_application = None
@@ -96,10 +96,8 @@ class FlowStateService(QObject):
         self.current_application = None
         self.pomodoro_status_updated.emit(DEFAULT_POMODORO_TIME, self.workday.pomodoros_left)
 
-
     def end_pomodoro(self):
         self.app_monitor.resume()
-
 
     def _update_pi_state(self, state):
         if state == 'pomodoro':
@@ -113,7 +111,6 @@ class FlowStateService(QObject):
             logger.debug('PI client successfully delivered start non_productive time post request')
         else:
             logger.warning(f"Attempted to update pi with illegal state: {state}")
-
 
     def _handle_new_script_response(self, script_response: ScriptResponse):
         logger.debug(f"Received new script response for application: {script_response.app_name}")
@@ -134,7 +131,6 @@ class FlowStateService(QObject):
 
         self.current_application_changed.emit(new_app, duration)
         self.current_application = new_app
-
 
     def _finalize_app_time(self):
         duration = int((datetime.datetime.now() - self.current_application.start_time).total_seconds())

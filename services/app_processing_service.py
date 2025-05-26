@@ -12,6 +12,7 @@ from log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 
+
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
@@ -20,7 +21,6 @@ class WorkerSignals(QObject):
 
 
 class AppProcessingService(QRunnable):
-
     class Signals(QObject):
         finished = pyqtSignal()
         error = pyqtSignal(tuple)
@@ -82,7 +82,6 @@ class AppProcessingService(QRunnable):
 
         is_productive = self.ai_client.send_message(formatted_msg).lower() == 'true'
         return self.get_or_create_application(app_name, is_productive)
-
 
     def format_web_app_inquiry(self, app_name: str):
         return (
