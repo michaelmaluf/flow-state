@@ -1,8 +1,8 @@
 import math
 
-from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtCore import Qt, QRect, QSize
 from PyQt6.QtGui import QPainter, QColor, QFont, QPen
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QSizePolicy
 
 
 class PieChart(QWidget):
@@ -10,7 +10,7 @@ class PieChart(QWidget):
         super().__init__(parent)
         self.productive_percent = productive_percent
         self.non_productive_percent = 100 - productive_percent
-        self.setMinimumSize(350, 350)
+        self.setMinimumSize(225, 225)
 
     def set_data(self, productive_percent):
         """Update the chart data"""
@@ -28,7 +28,7 @@ class PieChart(QWidget):
         side = min(width, height)
 
         # Calculate chart rectangle (leave margin for text)
-        margin = 40
+        margin = 5
         chart_size = side - (margin * 2)
         chart_rect = QRect(
             (width - chart_size) // 2,
@@ -58,23 +58,23 @@ class PieChart(QWidget):
         font = QFont("Arial", 14, QFont.Weight.Bold)
         painter.setFont(font)
 
-        center_x = width // 2
-        center_y = height // 2
-        radius = chart_size // 3
-
-        prod_angle_mid = math.radians(90 - (self.productive_percent * 3.6 / 2))
-        prod_x = center_x + radius * math.cos(prod_angle_mid)
-        prod_y = center_y - radius * math.sin(prod_angle_mid)
+        # center_x = width // 2
+        # center_y = height // 2
+        # radius = chart_size // 3
+        #
+        # prod_angle_mid = math.radians(90 - (self.productive_percent * 3.6 / 2))
+        # prod_x = center_x + radius * math.cos(prod_angle_mid)
+        # prod_y = center_y - radius * math.sin(prod_angle_mid)
 
         # Draw productive text
-        prod_text = f"{self.productive_percent}% Prod."
-        painter.drawText(int(prod_x - 150), int(prod_y), prod_text)
+        # prod_text = f"{self.productive_percent}% Prod."
+        # painter.drawText(int(prod_x - 150), int(prod_y), prod_text)
 
-        non_prod_angle_start = 90 - self.productive_percent * 3.6
-        non_prod_angle_mid = math.radians(non_prod_angle_start - (self.non_productive_percent * 3.6 / 2))
-        non_prod_x = center_x + radius * math.cos(non_prod_angle_mid)
-        non_prod_y = center_y - radius * math.sin(non_prod_angle_mid)
+        # non_prod_angle_start = 90 - self.productive_percent * 3.6
+        # non_prod_angle_mid = math.radians(non_prod_angle_start - (self.non_productive_percent * 3.6 / 2))
+        # non_prod_x = center_x + radius * math.cos(non_prod_angle_mid)
+        # non_prod_y = center_y - radius * math.sin(non_prod_angle_mid)
 
         # Draw non-productive text
-        non_prod_text = f"{self.non_productive_percent}% Non-Prod."
-        painter.drawText(int(non_prod_x + 100), int(non_prod_y), non_prod_text)
+        # non_prod_text = f"{self.non_productive_percent}% Non-Prod."
+        # painter.drawText(int(non_prod_x + 100), int(non_prod_y), non_prod_text)

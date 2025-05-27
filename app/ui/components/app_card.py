@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QHBoxLayout, QLabel, QFrame)
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import (QHBoxLayout, QLabel, QFrame, QGraphicsDropShadowEffect)
 
 
 class AppCard(QFrame):
@@ -17,6 +18,13 @@ class AppCard(QFrame):
                 background-color: transparent;
             }
         """)
+
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(8)
+        shadow.setXOffset(0)
+        shadow.setYOffset(2)
+        shadow.setColor(QColor(0, 0, 0, 40))
+        self.setGraphicsEffect(shadow)
 
         layout = QHBoxLayout(self)
 

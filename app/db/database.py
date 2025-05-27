@@ -151,7 +151,7 @@ class Database:
             )
                               .join(WorkdayApplicationModel.application)
                               .join(WorkdayApplicationModel.workday)
-                              .filter(WorkdayModel.date >= date)
+                              .filter(WorkdayModel.date > date)
                               .group_by(ApplicationModel.id, ApplicationModel.name, ApplicationModel.is_productive)
                               .order_by(func.sum(WorkdayApplicationModel.time_seconds).desc())
                               .all())

@@ -43,7 +43,7 @@ class AnalyticsView(QWidget):
 
         time_analysis_layout = QVBoxLayout(time_analysis_frame)
         time_analysis_layout.setContentsMargins(0, 10, 50, 10)
-        time_analysis_layout.setSpacing(18)
+        time_analysis_layout.setSpacing(15)
         time_analysis_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Title
@@ -171,7 +171,7 @@ class AnalyticsView(QWidget):
         breakdown_frame.setObjectName('breakdownFrame')
         breakdown_frame.setStyleSheet("""
             QFrame#breakdownFrame {
-                background-color: #23263a;
+                background-color: #20223e;
                 border-radius: 32px;
                 padding: 32px;
             }
@@ -285,11 +285,11 @@ class AnalyticsView(QWidget):
 
         content_widget = QWidget()
         content_widget.setStyleSheet("""
-            background-color: #23263a;
+            background-color: #20223e;
         """)
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setContentsMargins(20, 20, 20, 20)
-        content_layout.setSpacing(10)
+        content_layout.setContentsMargins(0, 5, 0, 0)
+        content_layout.setSpacing(5)
         content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Sample apps data (make it longer to test scrolling)
