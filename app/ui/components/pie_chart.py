@@ -1,8 +1,8 @@
-import sys
 import math
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QMainWindow
-from PyQt6.QtGui import QPainter, QColor, QFont, QPen
+
 from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtGui import QPainter, QColor, QFont, QPen
+from PyQt6.QtWidgets import QWidget
 
 
 class PieChart(QWidget):

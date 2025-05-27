@@ -1,22 +1,19 @@
 import atexit
-import os
-import json
-import sys
-from pathlib import Path
 import signal
+import sys
 
 import yaml
 from PyQt6.QtWidgets import QApplication
 
-from app.controller.analytics_controller import AnalyticsController
-from app.services.analytics_service import AnalyticsService
+from app.client.claude_client import ClaudeClient
 from app.client.pi_client import PiClient
+from app.controller.analytics_controller import AnalyticsController
 from app.controller.flow_state_controller import FlowStateController
+from app.db.database import Database
+from app.services.analytics_service import AnalyticsService
 from app.services.flow_state_service import FlowStateService
 from app.ui.main import MainWindow
-from app.db.database import Database
 from app.utils.log import setup_logging, get_main_app_logger
-from app.client.claude_client import ClaudeClient
 from app.utils.resolve_path import get_config_path
 
 setup_logging()

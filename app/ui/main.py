@@ -8,10 +8,10 @@ from app.client.pi_client import PiClient
 from app.controller.flow_state_controller import FlowStateController
 from app.db.database import Database
 from app.domain.analytics import TimeFrame
-from app.utils.log import setup_logging, get_main_app_logger
 from app.services.flow_state_service import FlowStateService
 from app.ui.views.analytics_view import AnalyticsView
 from app.ui.views.home_view import HomeView
+from app.utils.log import setup_logging, get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 

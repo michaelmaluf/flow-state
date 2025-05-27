@@ -1,8 +1,6 @@
 import os
-import sys
-import json
-import tempfile
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -99,21 +97,36 @@ class PyInstallerTester:
                 self.log_result("Build Process", False, result.stderr)
                 return False
 
-            # Find executable
             dist_dir = Path('dist')
-            exe_files = list(dist_dir.glob('*'))
-            exe_files = [f for f in exe_files if f.is_file() and os.access(f, os.X_OK)]
 
-            if not exe_files:
-                self.log_result("Build Process", False, "No executable found in dist/")
-                return False
+            # CASE 1: First check for onedir (folder structure)
+            app_folders = [f for f in dist_dir.glob('*') if f.is_dir()]
+            if app_folders:
+                # onedir - look for executable inside folder
+                app_folder = app_folders[0]
+                exe_files = [f for f in app_folder.glob('*')
+                             if f.is_file() and os.access(f, os.X_OK) and not f.name.startswith('_')]
+                if exe_files:
+                    self.exe_path = exe_files[0]
+                    # Calculate folder size for onedir
+                    folder_size = sum(f.stat().st_size for f in app_folder.rglob('*') if f.is_file())
+                    folder_size_mb = folder_size / (1024 * 1024)
+                    self.log_result("Build Process", True,
+                                    f"Executable: {self.exe_path} (folder: {folder_size_mb:.1f} MB)")
+                    return True
 
-            self.exe_path = exe_files[0]
-            file_size = self.exe_path.stat().st_size / (1024 * 1024)  # MB
+            # CASE 2: Fall back to onefile check
+            exe_files = [f for f in dist_dir.glob('*')
+                         if f.is_file() and os.access(f, os.X_OK)]
+            if exe_files:
+                self.exe_path = exe_files[0]
+                file_size = self.exe_path.stat().st_size / (1024 * 1024)
+                self.log_result("Build Process", True,
+                                f"Executable: {self.exe_path} ({file_size:.1f} MB)")
+                return True
 
-            self.log_result("Build Process", True,
-                            f"Executable: {self.exe_path} ({file_size:.1f} MB)")
-            return True
+            self.log_result("Build Process", False, "No executable found in dist/")
+            return False
 
         except subprocess.TimeoutExpired:
             self.log_result("Build Process", False, "Build timed out (10 minutes)")
@@ -129,8 +142,12 @@ class PyInstallerTester:
             return False
 
         if os.access(self.exe_path, os.X_OK):
-            self.log_result("Executable Basic", True, "Executable exists and is executable")
-            return True
+            if self.exe_path.is_file():
+                self.log_result("Executable Basic", True, "Executable exists and is executable")
+                return True
+            else:
+                self.log_result("Executable Basic", False, "Path is not a file")
+                return False
         else:
             self.log_result("Executable Basic", False, "Executable not executable")
             return False

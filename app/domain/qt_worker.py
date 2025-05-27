@@ -8,6 +8,7 @@ from PyQt6.QtCore import (
     pyqtSlot,
 )
 
+
 class WorkerSignals(QObject):
     """Signals from a running worker thread.
 

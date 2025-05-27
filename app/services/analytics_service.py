@@ -1,9 +1,11 @@
 import datetime
-from PyQt6.QtCore import QObject, pyqtSignal
+
+from PyQt6.QtCore import QObject
+
 from app.db.database import Database
+from app.domain.analytics import TimeFrame, AnalyticsReport
 from app.domain.models import ApplicationView
 from app.utils.log import get_main_app_logger
-from app.domain.analytics import TimeFrame, AnalyticsReport
 
 logger = get_main_app_logger(__name__)
 

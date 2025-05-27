@@ -7,9 +7,9 @@ from app.client.claude_client import AIClient
 from app.client.pi_client import PiClient
 from app.db.database import Database
 from app.domain.models import ScriptResponse, Application, Workday, WorkdayApplication
-from app.utils.log import get_main_app_logger
 from app.services.app_monitor_service import AppMonitorService
 from app.services.app_processing_service import AppProcessingService
+from app.utils.log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 

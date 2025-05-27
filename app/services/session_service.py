@@ -1,6 +1,4 @@
 import datetime
-import os
-import sys
 from typing import Optional
 
 from app.db.database import Database

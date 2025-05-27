@@ -1,7 +1,7 @@
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QTabWidget, QComboBox, QSizePolicy, QScrollArea
 )
-from PyQt6.QtCore import Qt, pyqtSignal
 
 from app.domain.analytics import AnalyticsReport, TimeFrame
 from app.domain.models import ApplicationView

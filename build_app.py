@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import subprocess
-import sys
 
 import yaml
 
@@ -34,7 +33,14 @@ def build_app():
     # Build command
     cmd = [
         'pyinstaller',
-        '--onefile',
+        '--onedir',
+        '--optimize', '2',
+        '--exclude-module', 'numpy',
+        '--exclude-module', 'matplotlib',
+        '--exclude-module', 'contourpy',
+        '--exclude-module', 'fonttools',
+        '--exclude-module', 'cycler',
+        '--exclude-module', 'kiwisolver',
         '--windowed',
         '--icon=icon.icns',
         '--add-data', 'resources:resources',

@@ -1,6 +1,3 @@
-import os
-import sys
-
 from PyQt6.QtCore import pyqtSlot, QRunnable, QObject, pyqtSignal
 
 from app.client.claude_client import AIClient

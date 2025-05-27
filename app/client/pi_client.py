@@ -1,6 +1,3 @@
-import os
-import sys
-
 from app.client.base_network_client import BaseNetworkClient
 from app.utils.log import get_main_app_logger
 
