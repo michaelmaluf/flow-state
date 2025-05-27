@@ -122,6 +122,9 @@ class HomeView(QWidget):
     def update_pomodoro_time(self, time: int):
         self.pomodoro_timer.setValue(time)
 
+    def update_pomodoros_remaining(self, pomodoros_remaining: int):
+        self.pomodoros_remaining.setText(str(pomodoros_remaining))
+
     def update_recent_applications(self, recent_apps: deque[ApplicationView]):
         while self.active_apps_layout.count() > 1:
             item = self.active_apps_layout.takeAt(1)

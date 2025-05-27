@@ -57,6 +57,7 @@ class FlowStateController:
 
         self.view.update_productive_time(self.local_productive_time)
         self.view.update_non_productive_time(self.local_non_productive_time)
+        self.view.update_pomodoros_remaining(self.local_pomodoros_remaining)
 
     """
     update UI on interval (1s)
