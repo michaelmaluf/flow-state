@@ -2,7 +2,7 @@ from collections import deque
 
 from PyQt6.QtCore import QTimer
 
-from app.domain.models import Application, ApplicationView
+from app.domain.models import Application, ApplicationView, Workday
 from app.utils.log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
@@ -15,6 +15,7 @@ class FlowStateController:
 
         self.ui_timer = QTimer()
         self.ui_timer.setInterval(60000)
+        self.minutes_since_last_reset = 0
 
         # local variables of archived data
         self.local_productive_time = 0
@@ -29,11 +30,17 @@ class FlowStateController:
         self.connect_slots_to_signals()
         self.init_local_variables()
 
-    def on_pomodoro_status_updated(self, time, pomodoros_remaining):
+    def on_pomodoro_status_updated(self, time, pomodoros_remaining, elapsed_time):
         self.local_pomodoro_time = time
         self.local_pomodoros_remaining = pomodoros_remaining
         self.view.update_pomodoro_status(time, pomodoros_remaining, True)
         self.ui_timer.setInterval(1000)
+        self.minutes_since_last_reset = 0
+        self.current_application = None
+
+        if self.recent_applications:
+            self.recent_applications[0].elapsed_time = elapsed_time
+            self.view.update_recent_applications(self.recent_applications)
 
     def connect_slots_to_signals(self):
         self.ui_timer.timeout.connect(self.update_timers)
@@ -66,15 +73,25 @@ class FlowStateController:
     def update_timers(self):
         if self.local_pomodoro_time:
             self.local_pomodoro_time -= 1
+            logger.debug(f"Updating pomodoro time in view to: {self.local_pomodoro_time}s")
             self.view.update_pomodoro_time(self.local_pomodoro_time)
-        elif not self.current_application:
-            return
-        elif self.current_application.is_productive:
-            self.local_productive_time += 60
-            self.view.update_productive_time(self.local_productive_time)
-        else:
-            self.local_non_productive_time += 60
-            self.view.update_non_productive_time(self.local_non_productive_time)
+        elif self.current_application:
+            seconds_since_last_reset = 60 * self.minutes_since_last_reset
+            updated_productive_time = self.local_productive_time
+            updated_non_productive_time = self.local_non_productive_time
+
+            if self.current_application.is_productive:
+                updated_productive_time += seconds_since_last_reset
+            else:
+                updated_non_productive_time += seconds_since_last_reset
+
+            logger.debug(f"Updating productive time in view to: {updated_productive_time}s")
+            logger.debug(f"Updating non productive time in view to: {updated_non_productive_time}s")
+            self.view.update_productive_time(updated_productive_time)
+            self.view.update_non_productive_time(updated_non_productive_time)
+
+            self.minutes_since_last_reset += 1
+
 
     """
     handlers for view events, calls methods in tracking service
@@ -118,10 +135,10 @@ class FlowStateController:
         logger.info(f"Application tracking state changed to: {is_tracking}")
         self.view.update_application_status(is_tracking)
 
-    def on_current_application_changed(self, new_app: Application, elapsed_time: int):
+    def on_current_application_changed(self, new_app: Application, elapsed_time: int, workday: Workday):
         logger.info(f"Current application changed to: {new_app.name}")
 
-        if self.recent_applications:
+        if self.recent_applications and elapsed_time != 0:
             self.recent_applications[0].elapsed_time = elapsed_time
 
         if not self.current_application or new_app.is_productive != self.current_application.is_productive:
@@ -131,21 +148,16 @@ class FlowStateController:
             # MIGHT NOT NEED THIS AT ALL, HAVE A SLOT ABOVE THAT INCREMENTS TIME AND VIEW DECIPHERS STATE OFF THAT
 
         self.current_application = new_app
+        self.local_productive_time = workday.productive_time_seconds
+        self.local_non_productive_time = workday.non_productive_time_seconds
+
+        self.ui_timer.stop()
+        self.minutes_since_last_reset = 0
+        self.update_timers()
+        self.ui_timer.start()
 
         if len(self.recent_applications) >= 4:
             self.recent_applications.pop()
 
         self.recent_applications.appendleft(ApplicationView(name=new_app.name, is_productive=new_app.is_productive))
         self.view.update_recent_applications(self.recent_applications)
-
-    # def on_productive_time_updated(self, time: int):
-    #     self.view.update_productive_time(time)
-    #
-    # def on_non_productive_time_updated(self, time: int):
-    #     self.view.update_productive_time(time)
-
-    # def on_pomodoro_time_updated(self, time: int):
-    #     self.view.update_pomodoro_time(time)
-    #
-    # def on_pomodoros_remaining_updated(self, count: int):
-    #     self.view.update_pomodoros_remaining(count)

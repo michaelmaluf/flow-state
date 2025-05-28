@@ -48,36 +48,11 @@ class HomeView(QWidget):
         for frame in [app_control_frame, session_frame, pomodoro_frame, active_apps_frame]:
             frame.setContentsMargins(25, 0, 25, 10)
             frame.resize(350, 300)
-            # frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-        # app_control_frame.setMinimumSize(350, 300)
-        # session_frame.setMinimumSize(350, 300)
-        # pomodoro_frame.setMinimumSize(350, 300)
-        # active_apps_frame.setMinimumSize(350, 300)
-
-        # app_control_frame.resize(350, 300)
-        # session_frame.resize(350, 300)
-        # pomodoro_frame.resize(350, 300)
-        # active_apps_frame.resize(350, 300)
 
         home_layout.addWidget(app_control_frame, 0, 0)
         home_layout.addWidget(session_frame, 0, 1)
         home_layout.addWidget(pomodoro_frame, 1, 0)
         home_layout.addWidget(active_apps_frame, 1, 1)
-
-        # # Top row with two cards
-        # top_row = QHBoxLayout()
-        # top_row.addWidget(app_control_frame, 1)
-        # top_row.addWidget(session_frame, 1)
-        #
-        # # Bottom row with two cards
-        # bottom_row = QHBoxLayout()
-        # bottom_row.addWidget(pomodoro_frame, 1)
-        # bottom_row.addWidget(active_apps_frame, 1)
-
-        # Add top & bottom rows to main layout
-        # home_layout.addLayout(top_row)
-        # home_layout.addLayout(bottom_row)
 
     def update_application_status(self, is_tracking: bool):
         # app control section

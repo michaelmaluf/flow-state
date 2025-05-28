@@ -18,8 +18,8 @@ DEFAULT_POMODORO_TIME = 600
 
 class FlowStateService(QObject):
     application_state_changed = pyqtSignal(bool)
-    current_application_changed = pyqtSignal(object, int)
-    pomodoro_status_updated = pyqtSignal(int, int)
+    current_application_changed = pyqtSignal(object, int, object)
+    pomodoro_status_updated = pyqtSignal(int, int, int)
     recent_apps_changed = pyqtSignal(list)  # (name, productive bool, time) for last 3 apps
 
     def __init__(self, db: Database, ai_client: AIClient, pi_client: PiClient):
@@ -37,7 +37,7 @@ class FlowStateService(QObject):
         self.pending_applications_to_flush: defaultdict[Application, int] = defaultdict(int)
 
         self.flush_timer = QTimer()
-        self.flush_timer.setInterval(15000)
+        self.flush_timer.setInterval(60000)
 
         self.connect_slots_to_signals()
         logger.debug("FlowStateService initialization complete")
@@ -84,17 +84,19 @@ class FlowStateService(QObject):
 
         self.app_monitor.pause()  # pause application tracking during pomodoro
 
+        duration = self._finalize_app_time() if self.current_application else 0
+
         # Flush to DB on pomodoro, by doing this we update workday and application state so we can come back to a fresh slate on completion
         self.workday.pomodoros_left -= 1
         self.flush_timer.stop()
-        self._handle_flush_to_db(finalize_current_app=self.current_application is not None)
+        self._handle_flush_to_db(finalize_current_app=False)
         self.flush_timer.start()
 
         logger.info(f"Starting pomodoro. Remaining: {self.workday.pomodoros_left}")
 
         self._update_pi_state('pomodoro')
         self.current_application = None
-        self.pomodoro_status_updated.emit(DEFAULT_POMODORO_TIME, self.workday.pomodoros_left)
+        self.pomodoro_status_updated.emit(DEFAULT_POMODORO_TIME, self.workday.pomodoros_left, duration)
 
     def end_pomodoro(self):
         self.app_monitor.resume()
@@ -129,7 +131,7 @@ class FlowStateService(QObject):
             state = 'productive' if new_app.is_productive else 'non_productive'
             self._update_pi_state(state)
 
-        self.current_application_changed.emit(new_app, duration)
+        self.current_application_changed.emit(new_app, duration, self.workday)
         self.current_application = new_app
 
     def _finalize_app_time(self):
