@@ -70,10 +70,10 @@ class FlowStateController:
         elif not self.current_application:
             return
         elif self.current_application.is_productive:
-            self.local_productive_time += 1
+            self.local_productive_time += 60
             self.view.update_productive_time(self.local_productive_time)
         else:
-            self.local_non_productive_time += 1
+            self.local_non_productive_time += 60
             self.view.update_non_productive_time(self.local_non_productive_time)
 
     """

@@ -1,4 +1,5 @@
 import atexit
+import os
 import signal
 import sys
 
@@ -30,7 +31,13 @@ def get_config():
         config_path = get_config_path('config.yaml')
 
         with open(config_path) as f:
-            config = yaml.safe_load(f)
+            yaml_content = f.read()
+
+        # Expand environment variables
+        expanded_content = os.path.expandvars(yaml_content)
+
+        # Parse the expanded YAML
+        config = yaml.safe_load(expanded_content)
 
         return config
     except Exception as e:
