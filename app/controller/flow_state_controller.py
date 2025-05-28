@@ -31,6 +31,7 @@ class FlowStateController:
         self.init_local_variables()
 
     def on_pomodoro_status_updated(self, time, pomodoros_remaining, elapsed_time):
+        time = 10
         self.local_pomodoro_time = time
         self.local_pomodoros_remaining = pomodoros_remaining
         self.view.update_pomodoro_status(time, pomodoros_remaining, True)
@@ -75,6 +76,8 @@ class FlowStateController:
             self.local_pomodoro_time -= 1
             logger.debug(f"Updating pomodoro time in view to: {self.local_pomodoro_time}s")
             self.view.update_pomodoro_time(self.local_pomodoro_time)
+            if self.local_pomodoro_time == 0:
+                self.end_pomodoro()
         elif self.current_application:
             seconds_since_last_reset = 60 * self.minutes_since_last_reset
             updated_productive_time = self.local_productive_time
