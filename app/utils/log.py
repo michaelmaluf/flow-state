@@ -49,16 +49,10 @@ def setup_logging(default_path='log.yaml', default_level=logging.INFO):
         register_logging_filters()
 
         logs_dir = get_logs_directory()
-        config_path = get_config_path('log.yaml')
+        config_path = get_config_path(default_path)
 
         # Create logs directory
-        # os.makedirs(logs_dir, exist_ok=True)
-
-        if os.path.exists(logs_dir):
-            shutil.rmtree(logs_dir)
-
-        # Create fresh empty directory
-        os.makedirs(logs_dir)
+        os.makedirs(logs_dir, exist_ok=True)
 
         if os.path.exists(config_path):
             # Load config

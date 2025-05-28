@@ -1,2 +1,2 @@
 ai_api_key: ${AI_API_KEY}
-database_url: 
+database_url: ${DB_URL}
