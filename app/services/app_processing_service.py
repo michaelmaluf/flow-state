@@ -28,6 +28,7 @@ class AppProcessingService(QRunnable):
         self.ai_client = ai_client
         self.script_response = script_response
         self.signals = self.Signals()
+        self.tag_applications = {'youtube', 'reddit'}
 
     @pyqtSlot()
     def run(self):
@@ -37,7 +38,7 @@ class AppProcessingService(QRunnable):
         3. CASE 3: new desktop app or web app, add to db workflow
         """
         app = self.get_application(self.script_response.app_name)
-        if self.script_response.tag:
+        if self.script_response.app_name in self.tag_applications and self.script_response.tag:
             app = self.process_tag_workflow(self.script_response.app_name, self.script_response.tag)
         elif not app:
             app = self.process_new_application(self.script_response.app_type, self.script_response.app_name)
