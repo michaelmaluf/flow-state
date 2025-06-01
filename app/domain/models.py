@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Dict, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -9,7 +9,8 @@ class Application(BaseModel):
     name: str
     is_productive: bool
     tag: str = ''
-    start_time: Optional[datetime] = Field(default_factory=datetime.now)
+    # start_time: Optional[datetime] = Field(default_factory=datetime.now)
+    elapsed_time: int = 0
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -44,7 +45,7 @@ class WorkdayApplication(BaseModel):
 
 class Workday(BaseModel):
     id: int
-    date: datetime
+    date: date
     pomodoros_left: int
     productive_time_seconds: int
     non_productive_time_seconds: int

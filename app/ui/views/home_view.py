@@ -33,6 +33,7 @@ class HomeView(QWidget):
                 }
                 """)
         self.setup_ui()
+        self.staged_data = True
 
     def setup_ui(self):
         home_layout = QGridLayout(self)
@@ -100,27 +101,44 @@ class HomeView(QWidget):
     def update_pomodoros_remaining(self, pomodoros_remaining: int):
         self.pomodoros_remaining.setText(str(pomodoros_remaining))
 
-    def update_recent_applications(self, recent_apps: deque[ApplicationView]):
-        while self.active_apps_layout.count() > 1:
-            item = self.active_apps_layout.takeAt(1)
-            if item.widget():
-                item.widget().deleteLater()
+    def update_recent_applications(self, new_app: ApplicationView):
+        if self.active_apps_layout.count() > 4:  # index 0 + 4 app cards
+            last_item = self.active_apps_layout.takeAt(4)
+            if last_item.widget():
+                last_item.widget().deleteLater()
 
-        for app in recent_apps:
-            app_card = AppCard(app.name, app.elapsed_time)
+        app_card = AppCard(new_app.name, new_app.elapsed_time)
 
-            # Set color based on productivity
-            if app.is_productive:
-                app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #4ade80; }")
-            else:
-                app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #ef4444; }")
+        # Set color based on productivity
+        if new_app.is_productive:
+            app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #4ade80; }")
+        else:
+            app_card.setStyleSheet(app_card.styleSheet() + "#appCard { border-left: 5px solid #ef4444; }")
 
-            self.active_apps_layout.addWidget(app_card)
+        self.active_apps_layout.insertWidget(1, app_card)
 
         self.active_apps_layout.addStretch()
 
+    def update_recent_application_time(self, elapsed_time):
+        if self.active_apps_layout.count() > 1:
+            item = self.active_apps_layout.itemAt(1)
+            if item and item.widget():
+                app_card = item.widget()
+                app_card.update_time(elapsed_time)
+
+
     def _on_start_app_clicked(self):
+        if self.staged_data:
+            while self.active_apps_layout.count() > 1:
+                last_item = self.active_apps_layout.takeAt(1)
+                if last_item.widget():
+                    last_item.widget().deleteLater()
+            self.staged_data = False
+            self.active_apps_layout.addStretch()
+
         self.start_app_clicked.emit()
+
+
 
     def _on_stop_app_clicked(self):
         self.stop_app_clicked.emit()
@@ -348,12 +366,10 @@ class HomeView(QWidget):
         active_apps_title.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
         self.active_apps_layout.addWidget(active_apps_title)
 
-        self.update_recent_applications(deque([
-            ApplicationView(name="VS Code", is_productive=True, elapsed_time=25),
-            ApplicationView(name="Terminal", is_productive=True, elapsed_time=15),
-            ApplicationView(name="Slack", is_productive=False, elapsed_time=10),
-            ApplicationView(name="Twitter", is_productive=True, elapsed_time=55),
-        ]))
+        self.update_recent_applications(ApplicationView(name="VS Code", is_productive=True, elapsed_time=25))
+        self.update_recent_applications(ApplicationView(name="Terminal", is_productive=True, elapsed_time=15))
+        self.update_recent_applications(ApplicationView(name="Slack", is_productive=False, elapsed_time=10))
+        self.update_recent_applications(ApplicationView(name="Twitter", is_productive=True, elapsed_time=55))
 
         self.active_apps_layout.addStretch()
 

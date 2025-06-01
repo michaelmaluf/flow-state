@@ -18,8 +18,10 @@ DEFAULT_POMODORO_TIME = 600
 
 class FlowStateService(QObject):
     application_state_changed = pyqtSignal(bool)
-    current_application_changed = pyqtSignal(object, int, object)
+    new_workday_loaded = pyqtSignal(int, int, int)
+    current_application_changed = pyqtSignal(object, object)
     pomodoro_status_updated = pyqtSignal(int, int, int)
+    elapsed_time_updated = pyqtSignal(int)
     recent_apps_changed = pyqtSignal(list)  # (name, productive bool, time) for last 3 apps
 
     def __init__(self, db: Database, ai_client: AIClient, pi_client: PiClient):
@@ -32,28 +34,66 @@ class FlowStateService(QObject):
         self.is_tracking = False
         self.threadpool = QThreadPool.globalInstance()
 
-        self.workday = self.db.get_todays_workday()
+        self.workday = None
         self.current_application = None
-        self.pending_applications_to_flush: defaultdict[Application, int] = defaultdict(int)
 
+        self.pending_applications_to_flush: defaultdict[Application, int] = defaultdict(int)
         self.flush_timer = QTimer()
         self.flush_timer.setInterval(60000)
 
+        self.last_checkpoint = None
+        self.checkpoint_timer = QTimer()
+        self.checkpoint_timer.setInterval(5000)
+
         self.connect_slots_to_signals()
+        self.setup_midnight_reset()
         logger.debug("FlowStateService initialization complete")
 
     def connect_slots_to_signals(self):
         self.app_monitor.new_script_response.connect(self._handle_new_script_response)
         self.flush_timer.timeout.connect(self._handle_flush_to_db)
+        self.checkpoint_timer.timeout.connect(self._on_checkpoint_timer)
 
     def start_tracking(self):
         if not self.is_tracking:
             self.is_tracking = True
+            self.load_todays_workday()
             self.app_monitor.start()
             self.flush_timer.start()
+            self.checkpoint_timer.start()
+            self.last_checkpoint = datetime.datetime.now()
             self.application_state_changed.emit(True)
         else:
             logger.warning("Attempted to start tracking while already tracking")
+
+    def _on_checkpoint_timer(self):
+        if self.current_application:
+            interval = self.checkpoint_timer.interval()
+            self.current_application.elapsed_time += (interval // 1000)
+            logger.debug(f"[Timer] Checkpoint timeout occurred (application: {self.current_application.name}, interval: {interval}ms)")
+            self.elapsed_time_updated.emit(self.current_application.elapsed_time)
+        self.last_checkpoint = datetime.datetime.now()
+
+    def load_todays_workday(self):
+        today = datetime.date.today()
+
+        if self.workday and self.workday.date != today:
+            self._handle_flush_to_db(finalize_current_app=True)
+
+        workday = self.db.get_todays_workday()
+        self.new_workday_loaded.emit(
+            workday.productive_time_seconds,
+            workday.non_productive_time_seconds,
+            workday.pomodoros_left
+        )
+        self.workday = workday
+
+    def setup_midnight_reset(self):
+        now = datetime.datetime.now()
+        midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        seconds_until_midnight = int((midnight - now).total_seconds()) + 1  # Add 1 second buffer
+        QTimer.singleShot(seconds_until_midnight * 1000, self.load_todays_workday)
+        logger.debug(f"[Timer] Midnight reset timer set and will go off in: {seconds_until_midnight} seconds")
 
     def stop_tracking(self):
         if self.is_tracking:
@@ -65,6 +105,8 @@ class FlowStateService(QObject):
             # manual flush
             self.flush_timer.stop()
             self._handle_flush_to_db(finalize_current_app=self.current_application is not None)
+
+            self.checkpoint_timer.stop()
 
             self.current_application = None
             self.pi_client.pause_all_timers()
@@ -85,6 +127,7 @@ class FlowStateService(QObject):
         self.app_monitor.pause()  # pause application tracking during pomodoro
 
         duration = self._finalize_app_time() if self.current_application else 0
+        self.checkpoint_timer.stop()
 
         # Flush to DB on pomodoro, by doing this we update workday and application state so we can come back to a fresh slate on completion
         self.workday.pomodoros_left -= 1
@@ -100,6 +143,8 @@ class FlowStateService(QObject):
 
     def end_pomodoro(self):
         self.app_monitor.resume()
+        self.checkpoint_timer.start()
+        self.last_checkpoint = datetime.datetime.now()
 
     def _update_pi_state(self, state):
         if state == 'pomodoro':
@@ -121,31 +166,41 @@ class FlowStateService(QObject):
         self.threadpool.start(worker)
 
     def _handle_app_change(self, new_app: Application):
-        duration = 0
-
         if self.current_application:
-            duration = self._finalize_app_time()
+            self._finalize_app_time()
             logger.debug(f"Application change: {self.current_application.name} -> {new_app.name}")
 
         if self.current_application is None or self.current_application.is_productive != new_app.is_productive:
             state = 'productive' if new_app.is_productive else 'non_productive'
             self._update_pi_state(state)
 
-        self.current_application_changed.emit(new_app, duration, self.workday)
+        self.current_application_changed.emit(new_app, self.workday)
         self.current_application = new_app
 
     def _finalize_app_time(self):
-        duration = int((datetime.datetime.now() - self.current_application.start_time).total_seconds())
-        logger.debug(f"Finalized app time for {self.current_application} (duration: {duration}s)")
+        if not self.current_application:
+            return
 
-        self.pending_applications_to_flush[self.current_application] += duration
+        self.checkpoint_timer.stop()
+
+        elapsed_time_since_checkpoint = (datetime.datetime.now() - self.last_checkpoint).seconds
+        print(elapsed_time_since_checkpoint)
+        self.current_application.elapsed_time += elapsed_time_since_checkpoint
+        self.elapsed_time_updated.emit(self.current_application.elapsed_time)
+
+        logger.debug(f"Finalized app time for {self.current_application} (duration: {self.current_application.elapsed_time}s)")
 
         if self.current_application.is_productive:
-            self.workday.productive_time_seconds += duration
+            self.workday.productive_time_seconds += self.current_application.elapsed_time
         else:
-            self.workday.non_productive_time_seconds += duration
+            self.workday.non_productive_time_seconds += self.current_application.elapsed_time
 
-        return duration
+        self.pending_applications_to_flush[self.current_application] += self.current_application.elapsed_time
+
+        self.last_checkpoint = datetime.datetime.now()
+        self.checkpoint_timer.start()
+
+        return self.current_application.elapsed_time
 
     def _handle_flush_to_db(self, finalize_current_app=False):
         if finalize_current_app:
@@ -172,6 +227,10 @@ class FlowStateService(QObject):
                     time_seconds=duration
                 ) for app, duration in self.pending_applications_to_flush.items()
             ]
+
+            logger.info(f"{len(workday_applications)} workday applications to flush to db:")
+            for wa in workday_applications:
+                logger.info(f"workday_id={wa.workday_id}, app_name={wa.application_id}, time={wa.time_seconds}s")
 
             self.db.bulk_save_workday_applications(workday_applications)
         except Exception as e:
