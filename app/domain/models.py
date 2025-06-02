@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, date
 from typing import Optional, Dict, Any
 
@@ -47,13 +48,22 @@ class Workday(BaseModel):
     id: int
     date: date
     pomodoros_left: int
-    productive_time_seconds: int
-    non_productive_time_seconds: int
-    workday_applications: Optional[list[WorkdayApplication]] = Field(default_factory=list)
+    workday_applications: list[WorkdayApplication]
+    productive_time_seconds: int = 0
+    non_productive_time_seconds: int = 0
+    # workday_applications: Optional[list[WorkdayApplication]] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True
     )
+
+    def model_post_init(self, __context):
+        for wa in self.workday_applications:
+            if wa.application.is_productive:
+                self.productive_time_seconds += wa.time_seconds
+            else:
+                self.non_productive_time_seconds += wa.time_seconds
+
 
 
 class Session(BaseModel):

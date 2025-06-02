@@ -8,7 +8,7 @@ from app.client.pi_client import PiClient
 from app.controller.flow_state_controller import FlowStateController
 from app.db.database import Database
 from app.domain.analytics import TimeFrame
-from app.services.flow_state_service import FlowStateService
+from app.services.flow_state_coordinator import FlowStateCoordinator
 from app.ui.views.analytics_view import AnalyticsView
 from app.ui.views.home_view import HomeView
 from app.utils.log import setup_logging, get_main_app_logger
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
     pi_client = PiClient("http://192.168.1.28:5050")
     ai_client = ClaudeClient()
-    flow_state_service = FlowStateService(db, ai_client, pi_client)
+    flow_state_service = FlowStateCoordinator(db, ai_client, pi_client)
 
     flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
 

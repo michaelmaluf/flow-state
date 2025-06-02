@@ -52,8 +52,8 @@ class AppCard(QFrame):
 
         # self.setLayout(layout)
 
-    def update_time(self, time_spent):
-        minutes, seconds = divmod(time_spent, 60)
+    def update_time(self, time: int):
+        minutes, seconds = divmod(time, 60)
         time_text = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
         self.time_label.setText(time_text)
         self.update()

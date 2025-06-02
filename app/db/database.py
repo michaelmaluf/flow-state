@@ -102,7 +102,12 @@ class Database:
     def get_todays_workday(self) -> Workday:
         today = datetime.date.today()
         with self.session_scope() as session:
-            workday = session.query(WorkdayModel).filter_by(date=today).first()
+            workday = (
+                session.query(WorkdayModel)
+                .options(joinedload(WorkdayModel.workday_applications).joinedload(WorkdayApplicationModel.application))
+                .filter_by(date=today)
+                .first()
+            )
 
             if not workday:
                 workday = WorkdayModel(date=today)
@@ -114,8 +119,6 @@ class Database:
     def update_workday(self, workday: Workday) -> None:
         with self.session_scope() as session:
             workday_model = session.get(WorkdayModel, workday.id)
-            workday_model.productive_time_seconds = workday.productive_time_seconds
-            workday_model.non_productive_time_seconds = workday.non_productive_time_seconds
             workday_model.pomodoros_left = workday.pomodoros_left
 
     def activate_pomodoro(self, workday: Workday) -> bool:

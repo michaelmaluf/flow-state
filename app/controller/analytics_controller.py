@@ -32,7 +32,7 @@ class AnalyticsController:
             time_frame=time_frame
         )
 
-        worker.signals.result.connect(lambda result: self.on_data_received(result, analytics_report_id))
+        # worker.signals.result.connect(lambda result: self.on_data_received(result, analytics_report_id))
 
         worker.signals.error.connect(self.on_error)
         worker.signals.progress.connect(self.on_progress)

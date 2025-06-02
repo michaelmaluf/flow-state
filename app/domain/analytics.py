@@ -1,14 +1,6 @@
 from dataclasses import dataclass, field
-from enum import Enum
-
+from app.domain.enums import TimeFrame
 from app.domain.models import ApplicationView
-
-
-class TimeFrame(Enum):
-    TODAY = 1
-    WEEK = 2
-    MONTH = 3
-    ALL = 4
 
 
 @dataclass

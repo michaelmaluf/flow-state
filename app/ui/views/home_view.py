@@ -75,21 +75,27 @@ class HomeView(QWidget):
         self.stop_button.setCursor(Qt.CursorShape.PointingHandCursor)
         # TODO: call the load initial data to propulate view with data on load
 
-    def update_productive_time(self, time: int):
+    def update_productive_time(self, time: int, current_app_time: int):
         hours, minutes = divmod(time // 60, 60)
         self.prod_time_value.setText(f"{hours}:{minutes:02d}")
 
-    def update_non_productive_time(self, time: int):
+        if current_app_time:
+            self.update_recent_application_time(current_app_time)
+
+    def update_non_productive_time(self, time: int, current_app_time: int):
         hours, minutes = divmod(time // 60, 60)
         self.nonprod_time_value.setText(f"{hours}:{minutes:02d}")
 
-    def update_pomodoro_status(self, time: int, pomodoros_remaining: int, is_active=False):
-        self.pomodoros_remaining.setText(str(pomodoros_remaining))
+        if current_app_time:
+            self.update_recent_application_time(current_app_time)
 
+    def update_pomodoro_status(self, time: int, pomodoros_remaining: int, is_active=False):
         if is_active:
+            self.pomodoros_remaining.setText(str(pomodoros_remaining))
             self.pomodoro_timer.setValue(time)
             self.pomodoro_start_button.setVisible(False)
             self.pomodoro_end_button.setVisible(True)
+            self.pomodoro_start_button.setEnabled(False) if pomodoros_remaining == 0 else None
         else:
             self.pomodoro_timer.setValue(self.pomodoro_timer.max_value)
             self.pomodoro_start_button.setVisible(True)
@@ -119,13 +125,12 @@ class HomeView(QWidget):
 
         self.active_apps_layout.addStretch()
 
-    def update_recent_application_time(self, elapsed_time):
+    def update_recent_application_time(self, time=None):
         if self.active_apps_layout.count() > 1:
             item = self.active_apps_layout.itemAt(1)
             if item and item.widget():
                 app_card = item.widget()
-                app_card.update_time(elapsed_time)
-
+                app_card.update_time(time)
 
     def _on_start_app_clicked(self):
         if self.staged_data:
@@ -137,8 +142,6 @@ class HomeView(QWidget):
             self.active_apps_layout.addStretch()
 
         self.start_app_clicked.emit()
-
-
 
     def _on_stop_app_clicked(self):
         self.stop_app_clicked.emit()

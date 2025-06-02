@@ -30,14 +30,12 @@ class WorkdayModel(Base):
     id = Column(Integer, primary_key=True)
     date = Column(Date, default=datetime.date.today, nullable=False, index=True)
     pomodoros_left = Column(Integer, default=3)
-    productive_time_seconds = Column(Integer, default=0)
-    non_productive_time_seconds = Column(Integer, default=0)
 
     workday_applications = relationship("WorkdayApplicationModel", back_populates="workday")
     sessions = relationship("SessionModel", back_populates="workday")
 
     def __repr__(self):
-        return f"<WorkdayModel(id={self.id}, date='{self.date}', productive={self.productive_time_seconds}s)>"
+        return f"<WorkdayModel(id={self.id}, date='{self.date}')>"
 
 
 class WorkdayApplicationModel(Base):
