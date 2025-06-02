@@ -4,7 +4,7 @@ from app.utils.log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 
-DEFAULT_POMODORO_TIME = 3
+DEFAULT_POMODORO_TIME = 600
 
 
 class PomodoroService(QObject):

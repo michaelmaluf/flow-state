@@ -109,6 +109,7 @@ class MainWindow(QMainWindow):
     def showEvent(self, event):
         super().showEvent(event)
         self.tabs.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+        self.home_tab.request_initial_data.emit()
         self.analytics_tab.analytics_report_requested.emit(TimeFrame.TODAY)
 
     def handle_graceful_exit(self):

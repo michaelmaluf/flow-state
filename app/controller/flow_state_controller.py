@@ -1,7 +1,3 @@
-from collections import deque
-
-from PyQt6.QtCore import QTimer
-
 from app.domain.models import Application, ApplicationView, Workday
 from app.services.flow_state_coordinator import ProductivityState
 from app.utils.log import get_main_app_logger
@@ -15,7 +11,6 @@ class FlowStateController:
         self.service = flow_state_coordinator
         self.is_tracking = False
         self.connect_slots_to_signals()
-        self.service.load_workday()
 
     def connect_slots_to_signals(self):
         # Connect view signals to controller methods
@@ -23,6 +18,7 @@ class FlowStateController:
         self.view.stop_app_clicked.connect(self.stop_tracking)
         self.view.start_pomodoro_clicked.connect(self.start_pomodoro)
         self.view.end_pomodoro_clicked.connect(self.end_pomodoro)
+        self.view.request_initial_data.connect(self.on_request_initial_data)
 
         # Connect service signals to controller methods
         self.service.application_status_changed.connect(self.on_application_status_changed)
@@ -81,6 +77,10 @@ class FlowStateController:
         logger.info("Ending pomodoro timer")
         if self.is_tracking:
             self.service.end_pomodoro()
+
+    def on_request_initial_data(self):
+        self.service.load_workday()
+
 
     """
     handlers for tracking service events, calls methods to update view

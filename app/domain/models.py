@@ -1,8 +1,8 @@
-from collections import defaultdict
+from datetime import datetime, date
 from datetime import datetime, date
 from typing import Optional, Dict, Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class Application(BaseModel):

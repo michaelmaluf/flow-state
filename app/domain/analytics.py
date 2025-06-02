@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+
 from app.domain.enums import TimeFrame
 from app.domain.models import ApplicationView
 

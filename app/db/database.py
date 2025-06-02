@@ -58,23 +58,6 @@ class Database:
             app = session.query(ApplicationModel).filter_by(name=app_name).first()
             return Application.from_orm(app) if app else None
 
-    def save_workday_application(self, workday_application: WorkdayApplication) -> None:
-        with self.session_scope() as session:
-            stmt = insert(WorkdayApplicationModel).values(
-                workday_id=workday_application.workday_id,
-                application_id=workday_application.application_id,
-                time_seconds=workday_application.time_seconds
-            )
-
-            stmt = stmt.on_conflict_do_update(
-                constraint='uq_workday_application_fks',
-                set_=dict(
-                    time_seconds=WorkdayApplicationModel.time_seconds + workday_application.time_seconds
-                )
-            )
-
-            session.execute(stmt)
-
     def bulk_save_workday_applications(self, workday_applications: list[WorkdayApplication]):
         with self.session_scope() as session:
             values = [
@@ -121,42 +104,24 @@ class Database:
             workday_model = session.get(WorkdayModel, workday.id)
             workday_model.pomodoros_left = workday.pomodoros_left
 
-    def activate_pomodoro(self, workday: Workday) -> bool:
-        pass
-
-    def get_all_workdays_from(self, date: datetime.date) -> list[Workday]:
-        with self.session_scope() as session:
-            workdays = (session.query(WorkdayModel)
-                        .options(joinedload(WorkdayModel.workday_applications)
-                                 .joinedload(WorkdayApplicationModel.application))
-                        .filter(WorkdayModel.date > date)
-                        .all())
-
-            return [Workday.from_orm(workday) for workday in workdays]
-
-    def get_workday_totals_from(self, date: datetime.date):
-        with self.session_scope() as session:
-            workday_totals = (session.query(
-                func.coalesce(func.sum(WorkdayModel.productive_time_seconds), 0).label('total_productive'),
-                func.coalesce(func.sum(WorkdayModel.non_productive_time_seconds), 0).label('total_non_productive'),
-            )
-                              .filter(WorkdayModel.date > date)
-                              .first())
-
-            return workday_totals.total_productive, workday_totals.total_non_productive
-
     def get_workday_application_totals_from(self, date: datetime.date):
         with self.session_scope() as session:
-            app_breakdowns = (session.query(
-                ApplicationModel.name,
-                ApplicationModel.is_productive,
-                func.sum(WorkdayApplicationModel.time_seconds).label('total_time')
+            app_breakdowns = (
+                session.query(
+                    ApplicationModel.name,
+                    ApplicationModel.is_productive,
+                    func.sum(WorkdayApplicationModel.time_seconds).label('total_time')
+                )
+                .join(WorkdayApplicationModel.application)
+                .join(WorkdayApplicationModel.workday)
+                .filter(WorkdayModel.date >= date)
+                .group_by(
+                    ApplicationModel.id,
+                    ApplicationModel.name,
+                    ApplicationModel.is_productive
+                )
+                .order_by(func.sum(WorkdayApplicationModel.time_seconds).desc())
+                .all()
             )
-                              .join(WorkdayApplicationModel.application)
-                              .join(WorkdayApplicationModel.workday)
-                              .filter(WorkdayModel.date > date)
-                              .group_by(ApplicationModel.id, ApplicationModel.name, ApplicationModel.is_productive)
-                              .order_by(func.sum(WorkdayApplicationModel.time_seconds).desc())
-                              .all())
 
             return app_breakdowns

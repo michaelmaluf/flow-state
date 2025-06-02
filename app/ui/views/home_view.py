@@ -1,5 +1,3 @@
-from collections import deque
-
 from PyQt6.QtCore import (
     pyqtSignal, Qt,
 )
@@ -59,7 +57,7 @@ class HomeView(QWidget):
         # app control section
         self.start_button.setVisible(not is_tracking)
         self.stop_button.setVisible(is_tracking)
-        self.pomodoro_start_button.setEnabled(is_tracking)
+        self.pomodoro_start_button.setEnabled(is_tracking and int(self.pomodoros_remaining.text()) > 0)
         self.status_indicator.setStyleSheet(
             "color: #4ade80; font-size: 24px;" if is_tracking else
             "color: #ef4444; font-size: 24px;"
@@ -73,7 +71,6 @@ class HomeView(QWidget):
         super().showEvent(event)
         self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.stop_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        # TODO: call the load initial data to propulate view with data on load
 
     def update_productive_time(self, time: int, current_app_time: int):
         hours, minutes = divmod(time // 60, 60)
@@ -106,6 +103,7 @@ class HomeView(QWidget):
 
     def update_pomodoros_remaining(self, pomodoros_remaining: int):
         self.pomodoros_remaining.setText(str(pomodoros_remaining))
+        self.pomodoro_start_button.setEnabled(False) if pomodoros_remaining == 0 else None
 
     def update_recent_applications(self, new_app: ApplicationView):
         if self.active_apps_layout.count() > 4:  # index 0 + 4 app cards

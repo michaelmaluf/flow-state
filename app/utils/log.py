@@ -2,7 +2,6 @@ import logging
 import logging.config
 import logging.handlers
 import os
-import shutil
 import sys
 
 import yaml
