@@ -20,6 +20,7 @@ class HomeView(QWidget):
     start_pomodoro_clicked = pyqtSignal()
     end_pomodoro_clicked = pyqtSignal()
     request_initial_data = pyqtSignal()
+    request_updated_daily_report = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -66,6 +67,7 @@ class HomeView(QWidget):
             "Application Running" if is_tracking else "Application Stopped"
         )
         self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.request_updated_daily_report.emit() if not is_tracking else None
 
     def showEvent(self, event):
         super().showEvent(event)

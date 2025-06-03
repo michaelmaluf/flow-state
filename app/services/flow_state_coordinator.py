@@ -69,8 +69,8 @@ class FlowStateCoordinator(QObject):
             self.app_service.disable()
 
             self._update_state(ProductivityState.IDLE)
-            self.app_service.disable()
             self._force_data_flush(False)
+            self.pi_sync_service.disable()
 
             self.status = FlowStateStatus.INACTIVE
             self.application_status_changed.emit(False)

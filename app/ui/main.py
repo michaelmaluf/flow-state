@@ -97,6 +97,8 @@ class MainWindow(QMainWindow):
         # Set the central widget
         self.setCentralWidget(self.tabs)
 
+        self.home_tab.request_updated_daily_report.connect(lambda: self.analytics_tab.analytics_report_requested.emit(TimeFrame.TODAY))
+
     def closeEvent(self, event):
         '''
         method will be overridden when application is transformed into a full-fledged desktop app, most likely will call window.hide() here

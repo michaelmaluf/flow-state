@@ -21,8 +21,8 @@ class PiSyncService(QObject):
         pass
 
     def disable(self):
-        self.pi_client.pause_all_timers()
-        # self.pi_client.wait_for_completion()
+        # self.pi_client.pause_all_timers()
+        self.pi_client.wait_for_completion()
 
     def update_pi_state(self, state: ProductivityState, time: int | None):
         if state == ProductivityState.POMODORO:
