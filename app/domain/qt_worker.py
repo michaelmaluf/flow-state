@@ -50,6 +50,7 @@ class QTWorker(QRunnable):
         self.kwargs = kwargs
         self.signals = WorkerSignals()
         self.kwargs["progress_callback"] = self.signals.progress  # callback to call in fn() for progress
+        self._should_emit = True
 
     @pyqtSlot()
     def run(self):
@@ -58,8 +59,19 @@ class QTWorker(QRunnable):
         except Exception:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
+            self._safe_emit(self.signals.error, (exctype, value, traceback.format_exc()))
         else:
-            self.signals.result.emit(result)
+            self._safe_emit(self.signals.result, result)
         finally:
-            self.signals.finished.emit()
+            self._safe_emit(self.signals.finished)
+
+    def cancel(self):
+        self._should_emit = False
+
+    def _safe_emit(self, signal, *args):
+        if not self._should_emit:
+            return
+        try:
+            signal.emit(*args)  # type: ignore
+        except RuntimeError:
+            pass

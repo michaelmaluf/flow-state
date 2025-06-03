@@ -10,6 +10,7 @@ from app.ui.components import PieChart, AppCard
 
 class AnalyticsView(QWidget):
     analytics_report_requested = pyqtSignal(object)
+    shutdown_detected = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -32,6 +33,11 @@ class AnalyticsView(QWidget):
         super().showEvent(event)
         self.tabs.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
 
+    def closeEvent(self, event):
+        # Disconnect before destruction
+        self.dropdown.currentIndexChanged.disconnect(self._on_dropdown_index_changed)
+        super().closeEvent(event)
+
     def update_with_analytics_report(self, analytics_report: AnalyticsReport):
         self._update_time_analysis_section(analytics_report)
         self._update_breakdown_section(analytics_report)
@@ -53,10 +59,10 @@ class AnalyticsView(QWidget):
 
 
         # Dropdown menu (styled QComboBox)
-        dropdown = QComboBox()
-        dropdown.addItems(["Today       ▼", "This Week      ▼", "This Month     ▼", "All Time     ▼"])
-        dropdown.setCurrentIndex(0)
-        dropdown.setStyleSheet("""
+        self.dropdown = QComboBox()
+        self.dropdown.addItems(["Today       ▼", "This Week      ▼", "This Month     ▼", "All Time     ▼"])
+        self.dropdown.setCurrentIndex(0)
+        self.dropdown.setStyleSheet("""
             QComboBox {
                 background-color: #23263a;
                 color: #bfc7d5;
@@ -76,8 +82,8 @@ class AnalyticsView(QWidget):
                 selection-background-color: #35395a;
             }
         """)
-        dropdown.currentIndexChanged.connect(self._on_dropdown_index_changed)
-        time_analysis_layout.addWidget(dropdown, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.dropdown.currentIndexChanged.connect(self._on_dropdown_index_changed)
+        time_analysis_layout.addWidget(self.dropdown, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Pie chart placeholder
         self.pie_chart = PieChart(productive_percent=65)

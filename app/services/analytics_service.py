@@ -22,7 +22,16 @@ class AnalyticsService(QObject):
         super().__init__()
         self.db = db
         self.thread_pool = QThreadPool.globalInstance()
+        self.active_workers = []
         logger.debug("[INIT] AnalyticsService initialization complete")
+
+    def disable(self):
+        for worker in self.active_workers:
+            worker.signals.finished.disconnect()
+            worker.signals.result.disconnect()
+            worker.signals.error.disconnect()
+            worker.signals.progress.disconnect()
+        self.active_workers.clear()
 
     def request_analytics_report(self, time_frame: TimeFrame, analytics_report_id: uuid.uuid4()):
         worker = QTWorker(
@@ -41,12 +50,18 @@ class AnalyticsService(QObject):
             lambda progress: self.generation_progress.emit(progress, analytics_report_id)
         )
         worker.signals.finished.connect(
-            lambda: self.generation_finished.emit(analytics_report_id)
+            lambda: self._on_worker_finished(worker, analytics_report_id)
         )
 
         logger.debug(f"[ANALYTICS] Worker thread spinning up to generate analytics report (id: {analytics_report_id})")
 
+        self.active_workers.append(worker)
         self.thread_pool.start(worker)
+
+    def _on_worker_finished(self, worker, analytics_report_id):
+        if worker in self.active_workers:
+            self.active_workers.remove(worker)
+        self.generation_finished.emit(analytics_report_id)
 
     def _generate_analytics_report(self, time_frame: TimeFrame, progress_callback):
         logger.debug(f"[ANALYTICS] Generating analytics report for time frame: {time_frame}")

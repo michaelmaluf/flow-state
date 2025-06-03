@@ -16,6 +16,7 @@ class AnalyticsController:
 
     def connect_slots_to_signals(self):
         self.view.analytics_report_requested.connect(self.on_analytics_report_requested)
+        self.view.shutdown_detected.connect(self.on_shutdown_detected)
         self.service.report_generated.connect(self.on_report_generated)
 
     def on_analytics_report_requested(self, time_frame: TimeFrame):
@@ -33,6 +34,9 @@ class AnalyticsController:
             self.view.update_with_analytics_report(data)
         else:
             logger.debug(f"[SERVICE_EVENT] Ignoring stale result from request {request_id}")
+
+    def on_shutdown_detected(self):
+        self.service.disable()
 
     def on_error(self, error_message):
         """Handle errors"""

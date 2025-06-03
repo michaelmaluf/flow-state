@@ -30,10 +30,6 @@ window: MainWindow | None = None
 flow_state_controller: FlowStateController | None = None
 analytics_controller: AnalyticsController | None = None
 
-# TODO: workday must be manually flushed at the first sign of a new day and a new workday loaded
-# TODO: what happens if application is running and computer goes to sleep ? test this
-# TODO: app is incrementing in the ui 1 more than supposed to
-
 
 def get_config():
     try:
@@ -90,13 +86,15 @@ def create_app():
 
 
 def signal_handler(signum, frame):
-    logger.info(f"Signal {signum} detected, initiating graceful exit")
+    logger.info(f"[SYSTEM] Signal {signum} detected, initiating graceful exit")
     window.handle_graceful_exit()
+    logger.info("[SYSTEM] Graceful exit completed")
 
 
 def exit_handler():
-    logger.info("Python exit detected, initiating graceful exit")
+    logger.info("[SYSTEM] Python exit detected, initiating graceful exit")
     window.handle_graceful_exit()
+    logger.info("[SYSTEM] Graceful exit completed")
 
 
 if __name__ == '__main__':

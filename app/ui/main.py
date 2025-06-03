@@ -1,17 +1,10 @@
-import sys
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QTabWidget)
 
-from app.client.claude_client import ClaudeClient
-from app.client.pi_client import PiClient
-from app.controller.flow_state_controller import FlowStateController
-from app.db.database import Database
 from app.domain.analytics import TimeFrame
-from app.services.flow_state_coordinator import FlowStateCoordinator
 from app.ui.views.analytics_view import AnalyticsView
 from app.ui.views.home_view import HomeView
-from app.utils.log import setup_logging, get_main_app_logger
+from app.utils.log import get_main_app_logger
 
 logger = get_main_app_logger(__name__)
 
@@ -116,6 +109,7 @@ class MainWindow(QMainWindow):
 
     def handle_graceful_exit(self):
         self.home_tab.stop_app_clicked.emit()
+        self.analytics_tab.shutdown_detected.emit()
         QApplication.instance().quit()
 
     def _on_app_state_changed(self, state):
@@ -124,20 +118,3 @@ class MainWindow(QMainWindow):
                 self.show()
                 self.raise_()
                 self.activateWindow()
-
-
-
-if __name__ == '__main__':
-    setup_logging()
-    app = QApplication([])
-    window = MainWindow()
-
-    db = Database(f"postgresql://percules:{sys.argv[1]}@localhost:5432/flow_state")
-    pi_client = PiClient("http://192.168.1.28:5050")
-    ai_client = ClaudeClient()
-    flow_state_service = FlowStateCoordinator(db, ai_client, pi_client)
-
-    flow_state_controller = FlowStateController(window.home_tab, flow_state_service)
-
-    window.show()
-    sys.exit(app.exec())
