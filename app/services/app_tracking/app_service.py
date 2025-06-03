@@ -26,11 +26,15 @@ class AppService(QObject):
 
         self.connect_slots_to_signals()
 
+        logger.debug("[INIT] AppService initialization complete")
+
     def enable(self):
         self.app_monitor.start()
+        logger.debug("[TRACKING] App monitor enabled")
 
     def disable(self):
         self.app_monitor.stop()
+        logger.debug("[TRACKING] App monitor disabled")
 
     def connect_slots_to_signals(self):
         self.app_monitor.new_script_response.connect(self._handle_new_script_response)
@@ -39,20 +43,13 @@ class AppService(QObject):
         return self.current_application
 
     def _handle_new_script_response(self, script_response: ScriptResponse):
-        logger.debug(f"Received new script response for application: {script_response.app_name}")
+        logger.debug(f"[TRACKING] Received new script response for application: {script_response.app_name}, spinning up App Processing Service")
         worker = AppProcessingService(self.db, self.ai_client, script_response)
         worker.signals.result.connect(self._handle_app_change)
         self.threadpool.start(worker)
 
     def _handle_app_change(self, new_app: Application):
-        # if self.current_application:
-        #     self._finalize_app_time()
-        #     logger.debug(f"Application change: {self.current_application.name} -> {new_app.name}")
-        #
-        # if self.current_application is None or self.current_application.is_productive != new_app.is_productive:
-        #     state = 'productive' if new_app.is_productive else 'non_productive'
-        #     self._update_pi_state(state)
-
+        logger.debug(f"[TRACKING] Received new application from App Processing Service for script")
         self.current_application_changed.emit(self.current_application, new_app)
         self.current_application = new_app
 

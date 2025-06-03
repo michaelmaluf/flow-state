@@ -22,17 +22,17 @@ class AnalyticsController:
         analytics_report_id = str(uuid.uuid4())
         self.current_request_id = analytics_report_id
 
-        logger.info(f"Received request to generate analytics report w/ time frame: {time_frame} (Request Id: {analytics_report_id})")
+        logger.info(f"[USER_ACTION] Received request to generate analytics report w/ time frame: {time_frame} (Request Id: {analytics_report_id})")
 
         self.service.request_analytics_report(time_frame, analytics_report_id)
 
     def on_report_generated(self, data: AnalyticsReport, request_id: uuid):
         """Called when data is ready - runs in UI thread"""
-        logger.info(f"Analytics report successfully generated for time frame: {data.time_frame} (Request Id: {request_id})")
+        logger.debug(f"[SERVICE_EVENT] Analytics report successfully generated for time frame: {data.time_frame} (Request Id: {request_id})")
         if request_id == self.current_request_id:
             self.view.update_with_analytics_report(data)
         else:
-            logger.debug(f"Ignoring stale result from request {request_id}")
+            logger.debug(f"[SERVICE_EVENT] Ignoring stale result from request {request_id}")
 
     def on_error(self, error_message):
         """Handle errors"""

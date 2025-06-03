@@ -22,7 +22,7 @@ class AnalyticsService(QObject):
         super().__init__()
         self.db = db
         self.thread_pool = QThreadPool.globalInstance()
-        logger.debug("AnalyticsService initialization complete")
+        logger.debug("[INIT] AnalyticsService initialization complete")
 
     def request_analytics_report(self, time_frame: TimeFrame, analytics_report_id: uuid.uuid4()):
         worker = QTWorker(
@@ -44,9 +44,13 @@ class AnalyticsService(QObject):
             lambda: self.generation_finished.emit(analytics_report_id)
         )
 
+        logger.debug(f"[ANALYTICS] Worker thread spinning up to generate analytics report (id: {analytics_report_id})")
+
         self.thread_pool.start(worker)
 
     def _generate_analytics_report(self, time_frame: TimeFrame, progress_callback):
+        logger.debug(f"[ANALYTICS] Generating analytics report for time frame: {time_frame}")
+
         from_ = datetime.date(2025, 5, 31)
 
         if time_frame == TimeFrame.TODAY:
@@ -83,7 +87,7 @@ class AnalyticsService(QObject):
         for app_view in non_productive_apps:
             app_view.percent_usage = app_view.elapsed_time / max(1, total_non_productive)
 
-        return AnalyticsReport(
+        analytics_report = AnalyticsReport(
             time_frame=time_frame,
             overall_time=total_productive + total_non_productive,
             productive_time=total_productive,
@@ -91,3 +95,7 @@ class AnalyticsService(QObject):
             productive_time_breakdown=productive_apps,
             non_productive_time_breakdown=non_productive_apps
         )
+
+        logger.debug(f"[ANALYTICS] Analytics report generation completed for time frame: {time_frame}")
+
+        return analytics_report

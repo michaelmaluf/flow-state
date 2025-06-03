@@ -58,6 +58,9 @@ def setup_logging(default_path='log.yaml', default_level=logging.INFO):
             with open(config_path, 'rt') as f:
                 config = yaml.safe_load(f.read())
 
+            if 'loggers' in config and 'main_app' in config['loggers']:
+                config['loggers']['main_app']['level'] = logging.getLevelName(default_level)
+
             # Fix log file paths
             for handler in config.get('handlers', {}).values():
                 if 'filename' in handler:

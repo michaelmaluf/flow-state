@@ -41,6 +41,8 @@ class FlowStateCoordinator(QObject):
 
         self.connect_slots_to_signals()
 
+        logger.debug("[INIT] FlowStateCoordinator initialization complete")
+
     def connect_slots_to_signals(self):
         self.app_service.current_application_changed.connect(self._handle_new_app)
         self.workday_service.new_workday_loaded.connect(self._on_new_workday_loaded)
@@ -55,24 +57,26 @@ class FlowStateCoordinator(QObject):
             self.data_flush_service.enable(self.workday_service.get_todays_workday())
             self.sync_timer.start(1000)
             self.application_status_changed.emit(True)
+            logger.info("[TRACKING] Application tracking has been started")
         else:
-            logger.warning("Attempted to start tracking while already tracking")
+            logger.warning("[TRACKING] Attempted to start tracking while already tracking")
 
     def stop_tracking(self):
         if self.status == FlowStateStatus.ACTIVE:
             self.status = FlowStateStatus.SHUTDOWN
+
             self.sync_timer.stop()
-            self._update_state(ProductivityState.IDLE)
-
             self.app_service.disable()
-            self._force_data_flush()
-            self.data_flush_service.disable()
-            self.pi_sync_service.disable()
 
-            self.application_status_changed.emit(False)
+            self._update_state(ProductivityState.IDLE)
+            self.app_service.disable()
+            self._force_data_flush(False)
+
             self.status = FlowStateStatus.INACTIVE
+            self.application_status_changed.emit(False)
+            logger.info("[TRACKING] Application tracking has been stopped")
         else:
-            logger.warning("Attempted to stop tracking while not tracking")
+            logger.warning("[TRACKING] Attempted to stop tracking while not tracking")
 
     def load_workday(self):
         self.workday_service.load_todays_workday()
@@ -83,24 +87,24 @@ class FlowStateCoordinator(QObject):
     def _pause_tracking(self):
         if self.status == FlowStateStatus.ACTIVE:
             self.app_service.disable()
-            self._force_data_flush()
-            self.data_flush_service.disable()
-
+            self._force_data_flush(False)
+            logger.info("[TRACKING] Application tracking has been paused")
         else:
-            logger.warning("Attempted to pause tracking while not tracking")
+            logger.warning("[TRACKING] Attempted to pause tracking while not tracking")
 
     def _resume_tracking(self):
         if self.status == FlowStateStatus.ACTIVE:
             self.app_service.enable()
-            self.data_flush_service.enable(self.workday_service.get_todays_workday())
+            self.data_flush_service.enable()
+            logger.info("[TRACKING] Application tracking has been resumed")
         else:
-            logger.warning("Attempted to resume tracking while not tracking")
+            logger.warning("[TRACKING] Attempted to resume tracking while not tracking")
 
     def start_pomodoro(self):
         pomodoros_remaining = self.workday_service.use_pomodoro_if_available()
 
         if pomodoros_remaining == -1:
-            logger.warning("Attempted to start pomodoro with no pomodoros remaining")
+            logger.warning("[POMO] Attempted to start pomodoro with no pomodoros remaining")
             return
 
         self.sync_timer.stop()
@@ -110,16 +114,22 @@ class FlowStateCoordinator(QObject):
         self.pomodoro_state_changed.emit(self.pomodoro_service.pomodoro_time, pomodoros_remaining, True)
         self.sync_timer.start()
 
-        logger.info(f"Starting pomodoro. Remaining: {pomodoros_remaining}")
+        logger.info(f"[POMO] Requested pomodoro successfully started. Remaining: {pomodoros_remaining}")
 
     def end_pomodoro(self):
-        if self.pomodoro_service.pomodoro_active:
-            self.pomodoro_service.cancel_pomodoro()
+        if not self.pomodoro_service.pomodoro_active:
+            return
 
-        self.sync_timer.stop()
-        self._resume_tracking()
+        self.pomodoro_service.complete_pomodoro()
         self.pomodoro_state_changed.emit(0, 0, False)
-        self.sync_timer.start()
+        self.state = ProductivityState.IDLE
+
+        if self.status == FlowStateStatus.ACTIVE:
+            self.sync_timer.stop()
+            self._resume_tracking()
+            self.sync_timer.start()
+
+        logger.info(f"[POMO] Active pomodoro successfully ended.")
 
     def _handle_new_app(self, old_app: Application, new_app: Application):
         # if old app -> save to flush service to be flushed
@@ -133,34 +143,34 @@ class FlowStateCoordinator(QObject):
         self.current_application_changed.emit(new_app)
 
     def _update_state(self, state: ProductivityState):
-        time = 0
-        if state == ProductivityState.PRODUCTIVE:
-            time = self.workday_service.get_productive_time()
-        elif state == ProductivityState.NON_PRODUCTIVE:
-            time = self.workday_service.get_non_productive_time()
-        elif state == ProductivityState.POMODORO:
-            time = self.pomodoro_service.pomodoro_time
-        else:
-            # idle state requested, if currently in pomodoro then end pomodoro
-            if self.state == ProductivityState.POMODORO:
-                self.pomodoro_service.cancel_pomodoro()
-                self.pomodoro_state_changed.emit(0, 0, False)
+        logger.debug(f"[STATE] Productivity state change detected (Old State: {self.state}, New State: {state})")
 
+        state_time_getters = {
+            ProductivityState.PRODUCTIVE: self.workday_service.get_productive_time,
+            ProductivityState.NON_PRODUCTIVE: self.workday_service.get_non_productive_time,
+            ProductivityState.POMODORO: lambda: self.pomodoro_service.pomodoro_time,
+            ProductivityState.IDLE: self.end_pomodoro,
+        }
+
+        time = state_time_getters[state]()
         self.pi_sync_service.update_pi_state(state, time)
         self.state = state
 
     def _handle_sync_update(self):
-        if self.state == ProductivityState.POMODORO:
+        if self.state == ProductivityState.POMODORO and self.pomodoro_service.pomodoro_active:
             pomodoro_time_remaining = self.pomodoro_service.decrement_pomodoro_time()
             if pomodoro_time_remaining >= 0:
                 self.timer_updated.emit(self.state, pomodoro_time_remaining, -1)
+                logger.debug(f"[SYNC] Pomodoro time updated, new time: {pomodoro_time_remaining}")
         else:
             is_productive = True if self.state == ProductivityState.PRODUCTIVE else False
             workday_updated_time = self.workday_service.increment_workday_time(1, is_productive)
             application_updated_time = self.app_service.increment_application_time(1)
             self.timer_updated.emit(self.state, workday_updated_time, application_updated_time)
+            logger.debug(
+                f"[SYNC] Productivity time updated, is productive: {is_productive}, total time: {workday_updated_time}, current app time: {application_updated_time}")
 
-    def _force_data_flush(self):
+    def _force_data_flush(self, reactivate=True):
+        logger.debug(f"[FLUSH] Forced data flush requested")
         current_application = self.app_service.get_current_application()
-        self.data_flush_service.force_flush(current_application)
-        current_application.elapsed_time = 0
+        self.data_flush_service.force_flush(current_application, reactivate)

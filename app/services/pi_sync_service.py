@@ -15,23 +15,25 @@ class PiSyncService(QObject):
     def __init__(self, pi_client: PiClient):
         super().__init__()
         self.pi_client = pi_client
+        logger.debug("[INIT] PiSyncService initialization complete")
 
     def enable(self):
         pass
 
     def disable(self):
         self.pi_client.pause_all_timers()
-        self.pi_client.wait_for_completion()
+        # self.pi_client.wait_for_completion()
 
-    def update_pi_state(self, state: ProductivityState, time: int):
+    def update_pi_state(self, state: ProductivityState, time: int | None):
         if state == ProductivityState.POMODORO:
             self.pi_client.start_pomodoro_timer(time)
-            logger.debug('PI client successfully delivered start pomodoro post request')
+            logger.debug('[API] PI client successfully delivered start pomodoro post request')
         elif state == ProductivityState.PRODUCTIVE:
             self.pi_client.start_productive_timer(time)
-            logger.debug('PI client successfully delivered start productive time post request')
+            logger.debug('[API] PI client successfully delivered start productive time post request')
         elif state == ProductivityState.NON_PRODUCTIVE:
             self.pi_client.start_non_productive_timer(time)
-            logger.debug('PI client successfully delivered start non_productive time post request')
+            logger.debug('[API] PI client successfully delivered start non_productive time post request')
         else:
-            logger.warning(f"Attempted to update pi with illegal state: {state}")
+            self.pi_client.pause_all_timers()
+            logger.debug('[API] PI client successfully delivered pause all timers post request')

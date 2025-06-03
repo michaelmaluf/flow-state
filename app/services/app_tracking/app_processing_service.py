@@ -30,6 +30,8 @@ class AppProcessingService(QRunnable):
         self.signals = self.Signals()
         self.tag_applications = {'youtube', 'reddit'}
 
+        logger.debug("[INIT] AppProcessingService initialization complete")
+
     @pyqtSlot()
     def run(self):
         """
@@ -60,6 +62,8 @@ class AppProcessingService(QRunnable):
             response = self.ai_client.send_message(claude_inquiry)
             is_productive = (response == 'True' or response == 'true')
 
+        logger.info(f"[PROCESSING] Application '{app_name}' encountered for the first time. Creating entry in the database.")
+
         return self.db.create_application(app_name, is_productive)
 
     def process_tag_workflow(self, app_name: str, msg: str) -> Application:
@@ -74,7 +78,7 @@ class AppProcessingService(QRunnable):
         elif app_name == 'reddit':
             formatted_msg = self.format_subreddit_inquiry(msg)
         else:
-            logger.error(f"App name not valid for tag workflow: {app_name}")
+            logger.error(f"[PROCESSING] App name not valid for tag workflow: {app_name}")
 
         is_productive = self.ai_client.send_message(formatted_msg).lower() == 'true'
         return self.get_or_create_application(app_name, is_productive)

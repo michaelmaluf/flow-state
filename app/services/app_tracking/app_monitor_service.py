@@ -1,5 +1,4 @@
 import subprocess
-import time
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
@@ -16,41 +15,41 @@ class AppMonitorService(QThread):
     def __init__(self):
         super().__init__()
         self.running = False
-        self.paused = False
         self.script_path = get_script_path('get_current_application.sh')
         self.last_script_response = None
+
+        logger.debug("[INIT] AppMonitorService initialization complete")
 
     def stop(self):
         self.running = False
         self.last_script_response = None
         self.requestInterruption()
-        self.wait(1000)
 
-    def pause(self):
-        logger.info("App Monitor has been paused, not collecting active application")
-        self.paused = True
-        self.last_script_response = None
-
-    def resume(self):
-        logger.info("App Monitor has been resumed, collecting active application")
-        self.paused = False
+        if not self.wait(1000):  # Wait up to 1 second
+            logger.warning("Thread didn't stop gracefully, forcing termination")
+            self.terminate()
+            self.wait()
 
     def run(self):
         self.running = True
         while self.running and not self.isInterruptionRequested():
             try:
-                if not self.paused:
-                    script_response = self.get_active_app()
-                    if script_response != self.last_script_response:
-                        self.new_script_response.emit(script_response)
-                        self.last_script_response = script_response
+                script_response = self.get_active_app()
+
+                if script_response != self.last_script_response:
+                    logger.debug(f"[TRACKING] New script response detected by monitoring service: {script_response}")
+                    self.new_script_response.emit(script_response)
+                    self.last_script_response = script_response
 
                 # Run on a 2-second interval
-                time.sleep(2)
+                for _ in range(20):
+                    if not self.running or self.isInterruptionRequested():
+                        break
+                    self.msleep(100)
 
             except Exception as e:
-                logger.error(f"Error while monitoring current application: {e}")
-                time.sleep(5)
+                logger.error(f"[TRACKING] Error while monitoring current application: {e}")
+                self.msleep(4000)
 
     def get_active_app(self):
         """Get the currently active application using bash script"""
@@ -78,4 +77,3 @@ class AppMonitorService(QThread):
             raise
         except Exception:
             raise
-

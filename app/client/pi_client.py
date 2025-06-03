@@ -10,7 +10,7 @@ class PiClient(BaseNetworkClient):
         self.base_url = url
 
     def _handle_success(self, operation_type, response):
-        logger.info(f"Successful HTTP request to pi client (Operation Type: {operation_type}, Response: {response})")
+        logger.info(f"[API] Successful HTTP request to pi client (Operation Type: {operation_type}, Response: {response})")
         self.response_received.emit(operation_type, response)
 
     def _handle_error(self, operation_type, error_msg, status_code):
@@ -18,7 +18,7 @@ class PiClient(BaseNetworkClient):
         if status_code:
             error_detail += f" (HTTP {status_code})"
 
-        logger.error(f"Failed HTTP request to pi client (Operation Type: {operation_type}, Error Details: {error_detail})")
+        logger.error(f"[API] Failed HTTP request to pi client (Operation Type: {operation_type}, Error Details: {error_detail})")
         self.request_error.emit(operation_type, error_detail)
 
     def start_productive_timer(self, time: int):

@@ -28,41 +28,15 @@ class FlowStateController:
         self.service.current_application_changed.connect(self.on_current_application_changed)
 
     """
-    update UI on interval (1s)
-    """
-
-    # def update_timers(self):
-    #     if self.local_pomodoro_time:
-    #         self.local_pomodoro_time -= 1
-    #         logger.debug(f"Updating pomodoro time in view to: {self.local_pomodoro_time}s")
-    #         self.view.update_pomodoro_time(self.local_pomodoro_time)
-    #         if self.local_pomodoro_time == 0:
-    #             self.end_pomodoro()
-    #     elif self.current_application:
-    #         if self.current_application.is_productive:
-    #             self.local_productive_time += 1
-    #         else:
-    #             self.local_non_productive_time += 1
-    #
-    #         logger.debug(f"Updating productive time in view to: {self.local_productive_time}s")
-    #         logger.debug(f"Updating non productive time in view to: {self.local_non_productive_time}s")
-    #         self.view.update_productive_time(self.local_productive_time)
-    #         self.view.update_non_productive_time(self.local_non_productive_time)
-    #         self.view.update_recent_application_time()
-
-        # self.view.update_recent_application_time(current_app_time)
-
-    """
     handlers for view events, calls methods in tracking service
     """
-
     def start_tracking(self):
-        logger.info("Starting application tracking")
+        logger.info("[USER_ACTION] Start application button clicked")
         self.is_tracking = True
         self.service.start_tracking()
 
     def stop_tracking(self):
-        logger.info("Stopping application tracking")
+        logger.info("[USER_ACTION] Stop application button clicked")
         if not self.is_tracking:
             return
 
@@ -70,11 +44,11 @@ class FlowStateController:
         self.service.stop_tracking()
 
     def start_pomodoro(self):
-        logger.info("Starting pomodoro timer")
+        logger.info("[USER_ACTION] Start pomodoro button clicked")
         self.service.start_pomodoro()
 
     def end_pomodoro(self):
-        logger.info("Ending pomodoro timer")
+        logger.info("[USER_ACTION] End pomodoro button clicked")
         if self.is_tracking:
             self.service.end_pomodoro()
 
@@ -85,12 +59,12 @@ class FlowStateController:
     """
     handlers for tracking service events, calls methods to update view
     """
-
     def on_application_status_changed(self, is_tracking):
-        logger.info(f"Application tracking state changed to: {is_tracking}")
+        logger.debug(f"[SERVICE_EVENT] Application tracking state changed to: {is_tracking}")
         self.view.update_application_status(is_tracking)
 
     def on_new_workday_loaded(self, workday: Workday):
+        logger.debug(f"[SERVICE_EVENT] Loading new workday data for date: {workday.date}")
         self.view.update_productive_time(workday.productive_time_seconds, 0)
         self.view.update_non_productive_time(workday.non_productive_time_seconds, 0)
         self.view.update_pomodoros_remaining(workday.pomodoros_left)
@@ -107,5 +81,5 @@ class FlowStateController:
         self.view.update_pomodoro_status(time, pomodoros_remaining, is_active)
 
     def on_current_application_changed(self, new_app: Application):
-        logger.info(f"Current application changed to: {new_app.name}")
+        logger.debug(f"[SERVICE_EVENT] Current application changed to: {new_app.name}")
         self.view.update_recent_applications(ApplicationView(name=new_app.name, is_productive=new_app.is_productive))

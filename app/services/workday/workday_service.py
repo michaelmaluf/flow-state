@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 
 from app.db.database import Database
 from app.domain.models import Workday
@@ -19,11 +19,13 @@ class WorkdayService(QObject):
         super().__init__()
         self.db = db
         self._workday = None
+        logger.debug("[INIT] WorkdayService initialization complete")
 
     @property
     def workday(self):
         if self._workday is None:
             self.load_todays_workday()
+            self._set_daily_flush_timer()
         return self._workday
 
     @workday.setter
@@ -36,11 +38,12 @@ class WorkdayService(QObject):
         today = datetime.date.today()
 
         if self._workday and self._workday.date != today:
-            # new day, force daily flush and signal new workday
+            logger.info("[WORKDAY] New workday detected, triggering daily flush and loading new workday")
             self.daily_flush_triggered.emit()
             self._workday = None
 
         self.workday = self.db.get_todays_workday()
+        logger.info("[WORKDAY] New workday successfully loaded")
 
     def get_todays_workday(self) -> Workday:
         return self.workday
@@ -64,3 +67,10 @@ class WorkdayService(QObject):
             return -1
         self.workday.pomodoros_left -= 1
         return self.workday.pomodoros_left
+
+    def _set_daily_flush_timer(self):
+        now = datetime.datetime.now()
+        midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        seconds_until_midnight = int((midnight - now).total_seconds()) + 1  # Add 1 second buffer
+        QTimer.singleShot(seconds_until_midnight * 1000, self.load_todays_workday)
+        logger.info(f"[SYNC] Midnight reset timer set for workday and will go off in: {seconds_until_midnight} seconds")
